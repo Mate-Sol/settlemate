@@ -1,0 +1,84 @@
+const mongoose = require('mongoose');
+
+const pspProfileSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  // Company Information
+  companyName: {
+    type: String,
+    required: true
+  },
+  registrationNo: String,
+  country: String,
+  yearEstablished: Number,
+  keyContact: {
+    name: String,
+    email: String,
+    phone: String
+  },
+  uboDetails: String,
+  pepExposure: Boolean,
+  
+  // Business Operations
+  sector: String,
+  keyProducts: [String],
+  topCustomers: [String],
+  topSuppliers: [String],
+  transactionVolume: String,
+  
+  // Financial Information
+  annualRevenue: Number,
+  outstandingLoans: Number,
+  bankAccount: {
+    bankName: String,
+    accountNumber: String,
+    swiftCode: String
+  },
+  defaultHistory: String,
+  
+  // KYC Documents
+  kycDocuments: [{
+    name: String,
+    url: String,
+    uploadedAt: { type: Date, default: Date.now }
+  }],
+  
+  // Credit Line Status
+  creditLineStatus: {
+    type: String,
+    enum: ['None', 'Pending', 'UnderReview', 'Approved', 'Rejected'],
+    default: 'None'
+  },
+  requestedAmount: Number,
+  requestedDuration: Number,
+  
+  // Approved Credit Line
+  approvedAmount: Number,
+  approvedDuration: Number,
+  utilizedBips: Number,
+  unutilizedBips: Number,
+  
+  // Blockchain Integration
+  walletAddress: String,
+  assignedPoolAddress: String,  // Deployed CreditLinePool contract address
+  
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+// Update timestamp on save
+pspProfileSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+module.exports = mongoose.model('PSPProfile', pspProfileSchema);

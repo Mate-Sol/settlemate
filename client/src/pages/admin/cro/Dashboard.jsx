@@ -1,17 +1,36 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { CreditCard, Users, FileCheck, AlertTriangle, LogOut, Eye } from 'lucide-react';
+import { CreditCard, Users, FileCheck, AlertTriangle, LogOut, Eye, Loader2 } from 'lucide-react';
+import { croAPI } from '../../../services/api';
 
 const CRODashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
+  const [applications, setApplications] = useState([]);
 
-  // Mock data for pending applications
-  const pendingApplications = [
-    { id: 1, company: 'Acme Payments', amount: '$500,000', date: '2026-01-25', status: 'Pending' },
-    { id: 2, company: 'FastPay Inc', amount: '$250,000', date: '2026-01-24', status: 'Under Review' },
-    { id: 3, company: 'PayFlow Ltd', amount: '$750,000', date: '2026-01-23', status: 'Pending' },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [appsResponse, statsResponse] = await Promise.all([
+        croAPI.getApplications(''),
+        croAPI.getStats()
+      ]);
+      
+      setApplications(appsResponse.data);
+      setStats(statsResponse.data);
+    } catch (err) {
+      console.error('Failed to fetch CRO dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,19 +82,19 @@ const CRODashboard = () => {
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <div className="stats-card">
               <span className="stats-label">Pending Applications</span>
-              <span className="stats-value text-status-warning">12</span>
+              <span className="stats-value text-status-warning">{stats?.pendingApplications}</span>
             </div>
             <div className="stats-card">
               <span className="stats-label">Active Credit Lines</span>
-              <span className="stats-value text-status-success">45</span>
+              <span className="stats-value text-status-success">{stats?.activeCreditLines}</span>
             </div>
             <div className="stats-card">
               <span className="stats-label">Total Exposure</span>
-              <span className="stats-value text-gradient">$12.5M</span>
+              <span className="stats-value text-gradient">${stats?.totalExposure}</span>
             </div>
             <div className="stats-card">
               <span className="stats-label">Overdue Accounts</span>
-              <span className="stats-value text-status-danger">3</span>
+              <span className="stats-value text-status-danger">{stats?.overdueAccounts}</span>
             </div>
           </div>
 
@@ -95,17 +114,17 @@ const CRODashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {pendingApplications.map((app) => (
+                {applications.map((app) => (
                   <tr key={app.id} className="table-row">
-                    <td className="table-cell font-medium">{app.company}</td>
-                    <td className="table-cell">{app.amount}</td>
-                    <td className="table-cell">{app.date}</td>
+                    <td className="table-cell font-medium">{app.companyName}</td>
+                    <td className="table-cell">{app.requestedAmount}</td>
+                    <td className="table-cell">{app.createdAt}</td>
                     <td className="table-cell">
-                      <span className="badge badge-warning">{app.status}</span>
+                      <span className="badge badge-warning">{app.creditLineStatus}</span>
                     </td>
                     <td className="table-cell">
                       <button 
-                        onClick={() => navigate(`/admin/cro/application/${app.id}`)}
+                        onClick={() => navigate(`/admin/cro/application/${app._id}`)}
                         className="flex items-center gap-2 px-4 py-2 text-brand-purple hover:bg-brand-purple hover:text-white rounded-lg transition-colors font-medium"
                       >
                         <Eye className="w-4 h-4" />

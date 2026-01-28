@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import OnboardingLayout from '../../layouts/OnboardingLayout';
 import CompanyInfo from './onboarding/CompanyInfo';
 import BusinessOperations from './onboarding/BusinessOperations';
@@ -7,10 +8,17 @@ import FinancialInfo from './onboarding/FinancialInfo';
 
 const Register = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
+    // Auth credentials (collected in first step)
+    email: '',
+    password: '',
+    name: '',
+    
     // Company Info
     companyName: '',
     registrationNo: '',
@@ -57,17 +65,52 @@ const Register = () => {
     } else {
       // Final submission
       setIsSubmitting(true);
+      setError('');
       try {
-        // TODO: Submit to backend API
-        console.log('Submitting registration:', formData);
+        // Register user with backend - send ALL form data
+        const result = await register({
+          // Auth credentials
+          email: formData.contactEmail || formData.email,
+          password: formData.password || 'TempPassword123!', // User should set this in CompanyInfo step
+          name: formData.contactName || formData.companyName,
+          
+          // Company info
+          companyName: formData.companyName,
+          registrationNo: formData.registrationNo,
+          country: formData.country,
+          yearEstablished: formData.yearEstablished,
+          contactName: formData.contactName,
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
+          uboDetails: `${formData.uboName} - ${formData.uboOwnership}% ownership`,
+          pepExposure: formData.isPEP,
+          
+          // Business operations
+          sector: formData.sector,
+          transactionVolume: formData.transactionVolume,
+          keyProducts: formData.products.filter(p => p.trim() !== ''),
+          topCustomers: formData.customers.filter(c => c.trim() !== ''),
+          topSuppliers: formData.suppliers.filter(s => s.trim() !== ''),
+          
+          // Financial info
+          annualRevenue: formData.annualRevenue,
+          outstandingLoans: formData.outstandingLoans,
+          bankName: formData.primaryBank,
+          bankAccountNo: formData.bankAccountNo,
+          swiftCode: formData.swiftCode,
+          defaultHistory: formData.hasDefaultHistory ? formData.defaultDetails : 'No default history'
+        });
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Redirect to apply financing limit
-        navigate('/psp/apply-limit');
+        if (result.success) {
+          // Redirect to apply financing limit after successful registration
+          navigate('/psp/apply-limit');
+        } else {
+          setError(result.error || 'Registration failed');
+          setIsSubmitting(false);
+        }
       } catch (error) {
         console.error('Registration failed:', error);
+        setError('Registration failed. Please try again.');
         setIsSubmitting(false);
       }
     }

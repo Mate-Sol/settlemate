@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { CreditCard, TrendingUp, Wallet, FileText, LogOut, Copy, Check, DollarSign, ArrowUpRight, UserPlus } from 'lucide-react';
+import { CreditCard, TrendingUp, Wallet, FileText, LogOut, Copy, Check, DollarSign, ArrowUpRight, UserPlus, Loader2 } from 'lucide-react';
 import FinancingStatsCard from '../../components/FinancingStatsCard';
 import OrderBookTable from '../../components/OrderBookTable';
 import RequestFinancingModal from '../../components/RequestFinancingModal';
 import RepayModal from '../../components/RepayModal';
+import { pspAPI } from '../../services/api';
 
 const PSPDashboard = () => {
   const { user, logout } = useAuth();
@@ -12,66 +13,145 @@ const PSPDashboard = () => {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [showFinancingModal, setShowFinancingModal] = useState(false);
   const [showRepayModal, setShowRepayModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [poolStatus, setPoolStatus] = useState(null);
 
-  // Mock financial data - would come from DeFa protocol in production
+  // Financial data from backend/blockchain
   const [financialData, setFinancialData] = useState({
-    totalLimit: 500000,
-    usedAmount: 120000,
-    availableAmount: 380000,
+    totalLimit: 0,
+    usedAmount: 0,
+    availableAmount: 0,
   });
 
-  // Mock wallet address assigned to this PSP
-  const walletAddress = '0x1234...5678AbCd';
-  const fullWalletAddress = '0x1234567890AbCdEf1234567890AbCdEf12345678';
+  // Wallet address from backend
+  const walletAddress = profile?.walletAddress ? 
+    `${profile.walletAddress.slice(0, 6)}...${profile.walletAddress.slice(-8)}` : 
+    'Not assigned';
+  const fullWalletAddress = profile?.walletAddress || '';
 
-  // Mock order book data
-  const [orders] = useState([
-    { id: 1, referenceId: 'ORD-2026-001', customer: 'TechCorp Inc', amount: 25000, date: '2026-01-25', settlementDate: '2026-02-24', status: 'Pending' },
-    { id: 2, referenceId: 'ORD-2026-002', customer: 'Global Retail', amount: 45000, date: '2026-01-24', settlementDate: '2026-02-23', status: 'Pending' },
-    { id: 3, referenceId: 'ORD-2026-003', customer: 'FastShip LLC', amount: 18000, date: '2026-01-23', settlementDate: '2026-02-22', status: 'Processing' },
-    { id: 4, referenceId: 'ORD-2026-004', customer: 'Metro Services', amount: 32000, date: '2026-01-22', settlementDate: '2026-02-21', status: 'Settled' },
-    { id: 5, referenceId: 'ORD-2026-005', customer: 'DigiPay Corp', amount: 55000, date: '2026-01-21', settlementDate: '2026-02-20', status: 'Pending' },
-    { id: 6, referenceId: 'ORD-2026-006', customer: 'CloudBase Inc', amount: 28000, date: '2026-01-20', settlementDate: '2026-02-19', status: 'Pending' },
-    { id: 7, referenceId: 'ORD-2026-007', customer: 'NextGen Ltd', amount: 42000, date: '2026-01-19', settlementDate: '2026-02-18', status: 'Processing' },
-    { id: 8, referenceId: 'ORD-2026-008', customer: 'Swift Trade', amount: 15000, date: '2026-01-18', settlementDate: '2026-02-17', status: 'Overdue' },
-    { id: 9, referenceId: 'ORD-2026-009', customer: 'Prime Goods', amount: 38000, date: '2026-01-17', settlementDate: '2026-02-16', status: 'Settled' },
-    { id: 10, referenceId: 'ORD-2026-010', customer: 'DataFlow Inc', amount: 22000, date: '2026-01-16', settlementDate: '2026-02-15', status: 'Pending' },
-    { id: 11, referenceId: 'ORD-2026-011', customer: 'QuickMart', amount: 19000, date: '2026-01-15', settlementDate: '2026-02-14', status: 'Pending' },
-    { id: 12, referenceId: 'ORD-2026-012', customer: 'BlockChain Co', amount: 67000, date: '2026-01-14', settlementDate: '2026-02-13', status: 'Processing' },
-  ]);
+  // Order book data from backend
+  const [orders, setOrders] = useState([]);
+
+  // Fetch dashboard data on mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch profile and order book in parallel
+      const [profileResponse, orderBookResponse] = await Promise.all([
+        pspAPI.getProfile(),
+        pspAPI.getOrderBook()
+      ]);
+
+      setProfile(profileResponse.data);
+      setOrders(orderBookResponse.data);
+
+      // If credit line is approved, fetch pool status from blockchain
+      if (profileResponse.data.creditLineStatus === 'Approved' && profileResponse.data.assignedPoolAddress) {
+        try {
+          const poolResponse = await pspAPI.getPoolStatus();
+          setPoolStatus(poolResponse.data);
+          
+          // Update financial data from blockchain
+          setFinancialData({
+            totalLimit: parseFloat(poolResponse.data.creditLimit) || 0,
+            usedAmount: parseFloat(poolResponse.data.utilizedAmount) || 0,
+            availableAmount: parseFloat(poolResponse.data.remainingCredit) || 0,
+          });
+        } catch (poolError) {
+          console.error('Failed to fetch pool status:', poolError);
+          // Use approved amounts from profile if pool status fails
+          setFinancialData({
+            totalLimit: profileResponse.data.approvedAmount || 0,
+            usedAmount: 0,
+            availableAmount: profileResponse.data.approvedAmount || 0,
+          });
+        }
+      } else if (profileResponse.data.creditLineStatus === 'Approved') {
+        // Use approved amounts from profile
+        setFinancialData({
+          totalLimit: profileResponse.data.approvedAmount || 0,
+          usedAmount: 0,
+          availableAmount: profileResponse.data.approvedAmount || 0,
+        });
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load dashboard data');
+      console.error('Dashboard fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const copyAddress = () => {
-    navigator.clipboard.writeText(fullWalletAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (fullWalletAddress) {
+      navigator.clipboard.writeText(fullWalletAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleFinancingSubmit = async (data) => {
-    // Simulate API/blockchain call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Update financial data (simulate disbursement)
-    setFinancialData(prev => ({
-      ...prev,
-      usedAmount: prev.usedAmount + data.amount,
-      availableAmount: prev.availableAmount - data.amount,
-    }));
-    
-    // Clear selection
-    setSelectedOrders([]);
+    try {
+      await pspAPI.requestFinancing({
+        amount: data.amount,
+        orderBookReferenceIds: selectedOrders.map(id => {
+          const order = orders.find(o => o.id === id);
+          return order?.referenceId;
+        }).filter(Boolean),
+      });
+      
+      // Refresh data after successful request
+      await fetchDashboardData();
+      
+      // Clear selection
+      setSelectedOrders([]);
+    } catch (err) {
+      console.error('Financing request failed:', err);
+      throw err;
+    }
   };
 
   const handleRepaySubmit = async (data) => {
-    // Simulate API/blockchain call
+    // Repay functionality would be implemented via smart contract
+    // For now, simulate the repayment
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Update financial data (simulate repayment)
-    setFinancialData(prev => ({
-      ...prev,
-      usedAmount: Math.max(0, prev.usedAmount - data.amount),
-      availableAmount: Math.min(prev.totalLimit, prev.availableAmount + data.amount),
-    }));
+    // Refresh pool status after repayment
+    await fetchDashboardData();
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-brand-purple mx-auto mb-4" />
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">Error loading dashboard</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button onClick={fetchDashboardData} className="btn-brand">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { CreditCard, Users, FileCheck, AlertTriangle, LogOut, ArrowLeft, CheckCircle, Clock, XCircle, Building, DollarSign, Calendar, FileText, Download } from 'lucide-react';
+import { CreditCard, Users, FileCheck, AlertTriangle, LogOut, ArrowLeft, CheckCircle, Clock, XCircle, Building, DollarSign, Calendar, FileText, Download, Loader2 } from 'lucide-react';
+import { croAPI } from '../../../services/api';
 
 const ApplicationReview = () => {
   const { id } = useParams();
@@ -9,30 +10,40 @@ const ApplicationReview = () => {
   const { user, logout } = useAuth();
   const [showDecisionModal, setShowDecisionModal] = useState(false);
   const [decision, setDecision] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [application, setApplication] = useState(null);
+  console.log(application);
+  // Decision form data
+  const [decisionData, setDecisionData] = useState({
+    approvedAmount: '',
+    approvedDuration: '',
+    walletAddress: '',
+    notes: ''
+  });
 
-  // Mock application data - in production would fetch from API
-  const application = {
-    id: id || '1',
-    company: 'Acme Payments Ltd',
-    registrationNo: '12345678',
-    country: 'United Kingdom',
-    yearEstablished: 2020,
-    contactName: 'John Smith',
-    contactEmail: 'john@acmepayments.com',
-    contactPhone: '+44 20 1234 5678',
-    sector: 'Payment Processing',
-    transactionVolume: '$1M - $5M',
-    annualRevenue: 5000000,
-    requestedAmount: 500000,
-    duration: 90,
-    submittedDate: '2026-01-25',
-    status: 'Pending',
-    documents: [
-      { name: 'Certificate of Incorporation.pdf', size: '245 KB', url: '#' },
-      { name: 'Financial Statements 2025.pdf', size: '1.2 MB', url: '#' },
-      { name: 'Bank Statements.pdf', size: '890 KB', url: '#' },
-      { name: 'Director ID - John Smith.pdf', size: '156 KB', url: '#' },
-    ]
+  useEffect(() => {
+    fetchApplication();
+  }, [id]);
+
+  const fetchApplication = async () => {
+    try {
+      setLoading(true);
+      const response = await croAPI.getApplication(id);
+      setApplication(response.data);
+      
+      // Pre-fill approval form with requested amounts
+      setDecisionData(prev => ({
+        ...prev,
+        approvedAmount: response.data.requestedAmount || '',
+        approvedDuration: response.data.requestedDuration || ''
+      }));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load application');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -47,6 +58,64 @@ const ApplicationReview = () => {
     setDecision(type);
     setShowDecisionModal(true);
   };
+
+  const submitDecision = async () => {
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      if (decision === 'approve') {
+        await croAPI.approveApplication(id, {
+          approvedAmount: parseFloat(decisionData.approvedAmount),
+          approvedDuration: parseInt(decisionData.approvedDuration),
+          walletAddress: decisionData.walletAddress,
+          notes: decisionData.notes
+        });
+        alert('Application approved! Smart contract deployment initiated.');
+      } else if (decision === 'reject') {
+        await croAPI.rejectApplication(id, {
+          notes: decisionData.notes
+        });
+        alert('Application rejected.');
+      } else if (decision === 'request-info') {
+        await croAPI.requestInfo(id, {
+          notes: decisionData.notes
+        });
+        alert('Additional information requested.');
+      }
+
+      // Navigate back to dashboard
+      navigate('/admin/cro');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to submit decision');
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-brand-purple mx-auto mb-4" />
+          <p className="text-gray-600">Loading application...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !application) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">Error loading application</div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button onClick={() => navigate('/admin/cro')} className="btn-brand">
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -100,10 +169,10 @@ const ApplicationReview = () => {
             </button>
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="page-header mb-1">{application.company}</h1>
+                <h1 className="page-header mb-1">{application.companyName}</h1>
                 <p className="text-gray-600">Credit Line Application Review</p>
               </div>
-              <span className="badge badge-warning">{application.status}</span>
+              <span className="badge badge-warning">{application.creditLineStatus}</span>
             </div>
           </div>
 
@@ -117,7 +186,7 @@ const ApplicationReview = () => {
             <div className="stats-card">
               <Calendar className="w-5 h-5 text-brand-purple mb-2" />
               <span className="stats-label">Duration</span>
-              <span className="stats-value">{application.duration} Days</span>
+              <span className="stats-value">{application.requestedDuration} Days</span>
             </div>
             <div className="stats-card">
               <Building className="w-5 h-5 text-brand-purple mb-2" />
@@ -152,7 +221,7 @@ const ApplicationReview = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Submitted Date</p>
-                <p className="font-medium">{application.submittedDate}</p>
+                <p className="font-medium">{new Date(application.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
@@ -163,15 +232,15 @@ const ApplicationReview = () => {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <p className="text-sm text-gray-500">Name</p>
-                <p className="font-medium">{application.contactName}</p>
+                <p className="font-medium">{application.keyContact?.name || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium">{application.contactEmail}</p>
+                <p className="font-medium">{application.keyContact?.email || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Phone</p>
-                <p className="font-medium">{application.contactPhone}</p>
+                <p className="font-medium">{application.keyContact?.phone || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -180,7 +249,7 @@ const ApplicationReview = () => {
           <div className="card mb-8">
             <h2 className="text-lg font-semibold mb-4">KYC Documents</h2>
             <div className="space-y-3">
-              {application.documents.map((doc, index) => (
+              {application?.kycDocuments?.map((doc, index) => (
                 <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                   <div className="flex items-center gap-3">
                     <FileText className="w-5 h-5 text-brand-purple" />
@@ -233,11 +302,15 @@ const ApplicationReview = () => {
         <DecisionModal 
           decision={decision}
           application={application}
-          onClose={() => setShowDecisionModal(false)}
-          onConfirm={() => {
+          decisionData={decisionData}
+          setDecisionData={setDecisionData}
+          submitting={submitting}
+          error={error}
+          onClose={() => {
             setShowDecisionModal(false);
-            navigate('/admin/cro');
+            setError(null);
           }}
+          onConfirm={submitDecision}
         />
       )}
     </div>
@@ -245,24 +318,14 @@ const ApplicationReview = () => {
 };
 
 // Decision Modal Component
-const DecisionModal = ({ decision, application, onClose, onConfirm }) => {
-  const [notes, setNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    onConfirm();
-  };
-
+const DecisionModal = ({ decision, application, decisionData, setDecisionData, submitting, error, onClose, onConfirm }) => {
   const modalConfig = {
     approve: {
       title: 'Approve Application',
       icon: <CheckCircle className="w-8 h-8 text-green-600" />,
       bgColor: 'bg-green-100',
       message: 'You are about to approve this credit line application. Upon approval, a dedicated CreditLine Pool smart contract will be deployed on Sepolia testnet.',
-      buttonText: 'Confirm Approval',
+      buttonText: 'Confirm Approval & Deploy Contract',
       buttonClass: 'bg-green-600 hover:bg-green-700',
     },
     'request-info': {
@@ -294,14 +357,59 @@ const DecisionModal = ({ decision, application, onClose, onConfirm }) => {
           </div>
           
           <h2 className="text-xl font-bold text-center mb-2">{config.title}</h2>
-          <p className="text-center text-gray-600 mb-2">{application.company}</p>
+          <p className="text-center text-gray-600 mb-2">{application.companyName}</p>
           <p className="text-center text-sm text-gray-500 mb-6">{config.message}</p>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
+          {decision === 'approve' && (
+            <div className="space-y-4 mb-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="input-label">Approved Amount (USD) *</label>
+                  <input
+                    type="number"
+                    value={decisionData.approvedAmount}
+                    onChange={(e) => setDecisionData(prev => ({ ...prev, approvedAmount: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="input-label">Duration (Days) *</label>
+                  <input
+                    type="number"
+                    value={decisionData.approvedDuration}
+                    onChange={(e) => setDecisionData(prev => ({ ...prev, approvedDuration: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="input-label">PSP Wallet Address (for contract deployment) *</label>
+                <input
+                  type="text"
+                  value={decisionData.walletAddress}
+                  onChange={(e) => setDecisionData(prev => ({ ...prev, walletAddress: e.target.value }))}
+                  className="input-field font-mono text-sm"
+                  placeholder="0x..."
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Contract will be deployed with this address as the borrower</p>
+              </div>
+            </div>
+          )}
 
           <div className="mb-6">
             <label className="input-label">Notes {decision !== 'approve' && '*'}</label>
             <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              value={decisionData.notes}
+              onChange={(e) => setDecisionData(prev => ({ ...prev, notes: e.target.value }))}
               className="input-field min-h-[100px]"
               placeholder={decision === 'request-info' ? "Specify what information is needed..." : "Add internal notes..."}
               required={decision !== 'approve'}
@@ -311,16 +419,24 @@ const DecisionModal = ({ decision, application, onClose, onConfirm }) => {
           <div className="flex gap-3">
             <button 
               onClick={onClose}
+              disabled={submitting}
               className="btn-secondary flex-1"
             >
               Cancel
             </button>
             <button 
-              onClick={handleSubmit}
-              disabled={isSubmitting || (decision !== 'approve' && !notes)}
-              className={`${config.buttonClass} text-white px-6 py-3 rounded-lg font-semibold transition-all flex-1 flex items-center justify-center gap-2`}
+              onClick={onConfirm}
+              disabled={submitting || (decision === 'approve' && (!decisionData.walletAddress || !decisionData.approvedAmount)) || (decision !== 'approve' && !decisionData.notes)}
+              className={`${config.buttonClass} text-white px-6 py-3 rounded-lg font-semibold transition-all flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Processing...' : config.buttonText}
+              {submitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                config.buttonText
+              )}
             </button>
           </div>
         </div>

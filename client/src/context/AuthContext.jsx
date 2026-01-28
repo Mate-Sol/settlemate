@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -16,12 +17,15 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check for existing session on mount
-    const storedUser = localStorage.getItem('credmate_user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedToken && storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (e) {
-        localStorage.removeItem('credmate_user');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
       }
     }
     setIsLoading(false);
@@ -30,27 +34,38 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // For now, simulate login with mock data
-      const mockUsers = {
-        'psp@credmate.com': { id: '1', email: 'psp@credmate.com', role: 'PSP', name: 'Acme Payments' },
-        'cro@credmate.com': { id: '2', email: 'cro@credmate.com', role: 'CRO', name: 'John Risk' },
-        'cfo@credmate.com': { id: '3', email: 'cfo@credmate.com', role: 'CFO', name: 'Sarah Finance' },
-      };
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      const userData = mockUsers[email.toLowerCase()];
-      if (userData && password === 'demo123') {
-        setUser(userData);
-        localStorage.setItem('credmate_user', JSON.stringify(userData));
-        return { success: true, user: userData };
-      } else {
-        throw new Error('Invalid email or password');
-      }
+      const response = await authAPI.login({ email, password });
+      const { token, user: userData } = response.data;
+      
+      // Store token and user data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      setUser(userData);
+      return { success: true, user: userData };
     } catch (error) {
-      return { success: false, error: error.message };
+      const message = error.response?.data?.message || 'Login failed';
+      return { success: false, error: message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const register = async (data) => {
+    setIsLoading(true);
+    try {
+      const response = await authAPI.register(data);
+      const { token, user: userData } = response.data;
+      
+      // Store token and user data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      setUser(userData);
+      return { success: true, user: userData };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Registration failed';
+      return { success: false, error: message };
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +73,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('credmate_user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   const value = {
@@ -66,6 +82,7 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     isAuthenticated: !!user,
     login,
+    register,
     logout,
   };
 

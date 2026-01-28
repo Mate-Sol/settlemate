@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, DollarSign, Calendar, Upload, FileText, CheckCircle, X, Loader2 } from 'lucide-react';
+import { pspAPI } from '../../services/api';
 
 const ApplyFinancingLimit = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
     requestedAmount: '',
@@ -38,17 +40,19 @@ const ApplyFinancingLimit = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
     
     try {
-      // TODO: Submit to backend API
-      console.log('Applying for financing limit:', { ...formData, documents: uploadedFiles });
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Submit application to backend
+      await pspAPI.applyForLimit({
+        requestedAmount: parseFloat(formData.requestedAmount),
+        requestedDuration: parseInt(formData.duration),
+      });
       
       setIsSubmitted(true);
     } catch (error) {
       console.error('Application failed:', error);
+      setError(error.response?.data?.message || 'Application failed. Please try again.');
       setIsSubmitting(false);
     }
   };
