@@ -1,0 +1,220 @@
+import { useAuth } from '../../../context/AuthContext';
+import { CreditCard, BarChart3, PieChart as PieChartIcon, TrendingUp, LogOut, DollarSign } from 'lucide-react';
+import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+const CFODashboard = () => {
+  const { user, logout } = useAuth();
+
+  // Mock data for exposure distribution
+  const exposureData = [
+    { name: 'Active Loans', value: 12500000, color: '#10b981' },
+    { name: 'Available Liquidity', value: 13300000, color: '#6366f1' },
+  ];
+
+  // Mock data for monthly yield
+  const yieldData = [
+    { month: 'Jul', utilized: 165000, unutilized: 38000 },
+    { month: 'Aug', utilized: 172000, unutilized: 39500 },
+    { month: 'Sep', utilized: 180000, unutilized: 39200 },
+    { month: 'Oct', utilized: 175000, unutilized: 40100 },
+    { month: 'Nov', utilized: 183000, unutilized: 39800 },
+    { month: 'Dec', utilized: 187500, unutilized: 39900 },
+  ];
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-8 h-8" />
+            <span className="text-xl font-bold">CredMate</span>
+          </div>
+          <span className="text-xs text-white/60 mt-1 block">CFO Admin</span>
+        </div>
+        
+        <nav className="p-4 space-y-2">
+          <a href="/admin/cfo" className="sidebar-link active">
+            <BarChart3 className="w-5 h-5" />
+            Treasury Overview
+          </a>
+          <a href="/admin/cfo/exposure" className="sidebar-link">
+            <PieChartIcon className="w-5 h-5" />
+            Exposure Analysis
+          </a>
+          <a href="/admin/cfo/yields" className="sidebar-link">
+            <TrendingUp className="w-5 h-5" />
+            Yield Reports
+          </a>
+        </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+          <button 
+            onClick={logout}
+            className="sidebar-link w-full justify-start text-white/60 hover:text-white"
+          >
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="ml-64 p-8">
+        <div className="max-w-6xl mx-auto">
+          <header className="mb-8">
+            <h1 className="page-header">CFO Dashboard</h1>
+            <p className="text-gray-600">Welcome, {user?.name} - Treasury & Yield Overview (Read-Only)</p>
+          </header>
+
+          {/* Treasury Stats */}
+          <div className="grid md:grid-cols-4 gap-6 mb-8">
+            <div className="stats-card">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-5 h-5 text-brand-purple" />
+                <span className="stats-label">Total Treasury</span>
+              </div>
+              <span className="stats-value text-gradient">$25.8M</span>
+            </div>
+            <div className="stats-card">
+              <span className="stats-label">Total Exposure</span>
+              <span className="stats-value text-status-warning">$12.5M</span>
+            </div>
+            <div className="stats-card">
+              <span className="stats-label">Available Liquidity</span>
+              <span className="stats-value text-status-success">$13.3M</span>
+            </div>
+            <div className="stats-card">
+              <span className="stats-label">Utilization Rate</span>
+              <span className="stats-value">48.4%</span>
+            </div>
+          </div>
+
+          {/* Charts Row */}
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            {/* Exposure Distribution Pie Chart */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-6">Exposure Distribution</h2>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={exposureData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {exposureData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Monthly Yield Trends */}
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-6">Monthly Yield Trends</h2>
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={yieldData}>
+                  <defs>
+                    <linearGradient id="colorUtilized" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorUnutilized" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                  <Legend />
+                  <Area type="monotone" dataKey="utilized" stroke="#10b981" fillOpacity={1} fill="url(#colorUtilized)" name="Utilized Yield" />
+                  <Area type="monotone" dataKey="unutilized" stroke="#6366f1" fillOpacity={1} fill="url(#colorUnutilized)" name="Unutilized Yield" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Yield Stats */}
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4">Yield Generation</h2>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-600">Utilized Rate (Active Loans)</p>
+                    <p className="text-lg font-semibold">5 bps/day</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Monthly Yield</p>
+                    <p className="text-lg font-semibold text-status-success">$187,500</p>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-600">Unutilized Rate (Idle)</p>
+                    <p className="text-lg font-semibold">1 bps/day</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600">Monthly Yield</p>
+                    <p className="text-lg font-semibold text-status-info">$39,900</p>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-brand-purple to-brand-magenta rounded-lg text-white">
+                  <div>
+                    <p className="text-sm text-white/80">Total Monthly Yield</p>
+                    <p className="text-xl font-bold">$227,400</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-white/80">Annualized Return</p>
+                    <p className="text-xl font-bold">10.56%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
+              <h2 className="text-xl font-semibold mb-4">Pool Status</h2>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
+                  <span className="font-medium text-green-800">Active Vaults</span>
+                  <span className="text-xl font-bold text-green-800">45</span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-amber-50 rounded-lg">
+                  <span className="font-medium text-amber-800">Pending Closure</span>
+                  <span className="text-xl font-bold text-amber-800">3</span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
+                  <span className="font-medium text-gray-800">Closed This Month</span>
+                  <span className="text-xl font-bold text-gray-800">8</span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
+                  <span className="font-medium text-purple-800">Total Vaults (All-Time)</span>
+                  <span className="text-xl font-bold text-purple-800">156</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default CFODashboard;
