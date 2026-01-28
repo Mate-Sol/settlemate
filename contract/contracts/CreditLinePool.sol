@@ -51,6 +51,7 @@ contract CreditLinePool {
 
     /**
      * @dev Constructor to initialize the credit line pool
+     * @param _admin Address of the admin (CRO) who will manage this pool
      * @param _psp Address of the PSP (borrower)
      * @param _usdDFToken Address of the USD-DF stablecoin token
      * @param _creditLimit Total credit limit in wei (with token decimals)
@@ -59,6 +60,7 @@ contract CreditLinePool {
      * @param _unutilizedBips Unutilized rate in basis points per day
      */
     constructor(
+        address _admin,
         address _psp,
         address _usdDFToken,
         uint256 _creditLimit,
@@ -66,12 +68,13 @@ contract CreditLinePool {
         uint256 _utilizedBips,
         uint256 _unutilizedBips
     ) {
+        require(_admin != address(0), "Invalid admin address");
         require(_psp != address(0), "Invalid PSP address");
         require(_usdDFToken != address(0), "Invalid token address");
         require(_creditLimit > 0, "Credit limit must be greater than 0");
         require(_duration > 0, "Duration must be greater than 0");
 
-        admin = msg.sender;
+        admin = _admin;
         psp = _psp;
         usdDF = IERC20(_usdDFToken);
         creditLimit = _creditLimit;

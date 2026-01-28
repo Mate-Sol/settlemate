@@ -20,6 +20,7 @@ cp .env.example .env
    - `SEPOLIA_RPC_URL`: Sepolia RPC endpoint
    - `ADMIN_PRIVATE_KEY`: Admin wallet private key
    - `USDDF_TOKEN_ADDRESS`: Deployed USD-DF token address
+   - `CREDITLINE_FACTORY_ADDRESS`: Deployed CreditLinePoolDeployer factory address
 
 ## Running the Server
 
@@ -85,11 +86,13 @@ Server will run on `http://localhost:5000` (or PORT from `.env`)
 
 ## Smart Contract Integration
 
-The `contractService.js` handles:
-- **Deploy CreditLinePool**: Deploys new pool when CRO approves
-- **Fund Pool**: Deposits USD-DF liquidity
-- **Get Pool Status**: Queries blockchain for pool info
+The `contractService.js` handles blockchain interactions via factory deployer pattern:
+- **Deploy CreditLinePool**: Uses factory contract to deploy new pools when CRO approves
+- **Fund Pool**: Deposits USD-DF liquidity into deployed pools
+- **Get Pool Status**: Queries blockchain for pool information
 - **Monitor Events**: Listens to Drawdown and Repayment events
+
+The factory contract (`CreditLinePoolDeployer`) centralizes all pool deployments and provides tracking for all deployed pools.
 
 ## Authentication
 

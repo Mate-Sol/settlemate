@@ -11,9 +11,20 @@ class ContractService {
     // USD-DF Token address
     this.usdDFAddress = process.env.USDDF_TOKEN_ADDRESS;
     
+    // Factory deployer address
+    this.factoryAddress = process.env.CREDITLINE_FACTORY_ADDRESS;
+    
     // Contract ABIs (simplified for key functions)
+    this.factoryABI = [
+      "function deployPool(address _psp, address _usdDFToken, uint256 _creditLimit, uint256 _duration, uint256 _utilizedBips, uint256 _unutilizedBips) external returns (address)",
+      "function getPoolsByPSP(address _psp) external view returns (address[])",
+      "function getPoolCount() external view returns (uint256)",
+      "function getAllPools() external view returns (address[])",
+      "event PoolDeployed(address indexed poolAddress, address indexed psp, uint256 creditLimit, uint256 duration, uint256 timestamp)"
+    ];
+    
     this.creditLinePoolABI = [
-      "constructor(address _psp, address _usdDFToken, uint256 _creditLimit, uint256 _duration, uint256 _utilizedBips, uint256 _unutilizedBips)",
+      "constructor(address _admin, address _psp, address _usdDFToken, uint256 _creditLimit, uint256 _duration, uint256 _utilizedBips, uint256 _unutilizedBips)",
       "function drawdown(uint256 amount, string memory referenceId) external",
       "function repay(uint256 principal) external",
       "function fundPool(uint256 amount) external",
@@ -34,23 +45,23 @@ class ContractService {
   }
 
   /**
-   * Deploy a new CreditLinePool contract
+   * Deploy a new CreditLinePool contract via Factory
    */
   async deployCreditLinePool(pspAddress, creditLimit, duration, utilizedBips, unutilizedBips) {
     try {
-      // Load contract factory
-      const CreditLinePool = new ethers.ContractFactory(
-        this.creditLinePoolABI,
-        require('../../contract/artifacts/contracts/CreditLinePool.sol/CreditLinePool.json').bytecode,
+      // Get factory contract instance
+      const factory = new ethers.Contract(
+        this.factoryAddress,
+        this.factoryABI,
         this.adminWallet
       );
 
       // Convert credit limit to proper decimals (assuming 6 decimals for USD-DF)
       const creditLimitWei = ethers.parseUnits(creditLimit.toString(), 6);
 
-      // Deploy contract
-      console.log('Deploying CreditLinePool contract...');
-      const contract = await CreditLinePool.deploy(
+      // Deploy via factory
+      console.log('Deploying CreditLinePool via factory for PSP:', pspAddress);
+      const tx = await factory.deployPool(
         pspAddress,
         this.usdDFAddress,
         creditLimitWei,
@@ -59,15 +70,35 @@ class ContractService {
         unutilizedBips
       );
 
-      await contract.waitForDeployment();
-      const contractAddress = await contract.getAddress();
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      
+      // Get the deployed pool address from the event
+      const poolDeployedEvent = receipt.logs.find(
+        log => {
+          try {
+            const parsedLog = factory.interface.parseLog(log);
+            return parsedLog && parsedLog.name === 'PoolDeployed';
+          } catch {
+            return false;
+          }
+        }
+      );
+      
+      let contractAddress;
+      if (poolDeployedEvent) {
+        const parsedEvent = factory.interface.parseLog(poolDeployedEvent);
+        contractAddress = parsedEvent.args.poolAddress;
+      } else {
+        throw new Error('PoolDeployed event not found in transaction receipt');
+      }
 
       console.log(`CreditLinePool deployed at: ${contractAddress}`);
 
       return {
         success: true,
         contractAddress,
-        transactionHash: contract.deploymentTransaction().hash
+        transactionHash: tx.hash
       };
     } catch (error) {
       console.error('Contract deployment error:', error);
@@ -95,11 +126,21 @@ class ContractService {
       const pool = new ethers.Contract(poolAddress, this.creditLinePoolABI, this.adminWallet);
       console.log('Funding pool...');
       const fundTx = await pool.fundPool(amountWei);
-      await fundTx.wait();
+      
+      // Wait for transaction with timeout (30 seconds)
+      console.log('Waiting for funding transaction confirmation...');
+      const receipt = await Promise.race([
+        fundTx.wait(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Transaction timeout after 30 seconds')), 30000)
+        )
+      ]);
 
+      console.log('Pool funded successfully! Block:', receipt.blockNumber);
       return {
         success: true,
-        transactionHash: fundTx.hash
+        transactionHash: fundTx.hash,
+        blockNumber: receipt.blockNumber
       };
     } catch (error) {
       console.error('Pool funding error:', error);

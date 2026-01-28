@@ -84,19 +84,7 @@ router.post('/applications/:id/approve', async (req, res) => {
       });
     }
 
-    // Fund the pool with approved amount
-    console.log('Funding pool with USD-DF...');
-    const fundResult = await contractService.fundPool(
-      deployResult.contractAddress,
-      approvedAmount
-    );
-
-    if (!fundResult.success) {
-      console.error('Failed to fund pool:', fundResult.error);
-      // Continue anyway - admin can fund manually later
-    }
-
-    // Update profile
+    // Update profile immediately
     profile.creditLineStatus = 'Approved';
     profile.approvedAmount = approvedAmount;
     profile.approvedDuration = approvedDuration;
@@ -107,14 +95,31 @@ router.post('/applications/:id/approve', async (req, res) => {
 
     await profile.save();
 
+    // Send response immediately - don't wait for funding
     res.json({
       message: 'Application approved and contract deployed',
       profile,
       deployment: {
         contractAddress: deployResult.contractAddress,
         transactionHash: deployResult.transactionHash,
-        funded: fundResult.success
+        fundingStatus: 'pending'
       }
+    });
+
+    // Fund the pool asynchronously (in background)
+    console.log('Funding pool with USD-DF in background...');
+    contractService.fundPool(
+      deployResult.contractAddress,
+      approvedAmount
+    ).then(fundResult => {
+      if (fundResult.success) {
+        console.log('✅ Pool funded successfully:', fundResult.transactionHash);
+      } else {
+        console.error('❌ Failed to fund pool:', fundResult.error);
+        console.log('Admin can fund manually later using fundPool function');
+      }
+    }).catch(error => {
+      console.error('❌ Pool funding error:', error);
     });
   } catch (error) {
     console.error(error);
