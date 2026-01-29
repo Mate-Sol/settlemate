@@ -215,7 +215,9 @@ const CFODashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-gray-600">Monthly Yield</p>
-                    <p className="text-lg font-semibold text-status-success">$187,500</p>
+                    <p className="text-lg font-semibold text-status-success">
+                      {formatCurrency(yieldData.length > 0 ? yieldData[yieldData.length - 1].utilized : 0)}
+                    </p>
                   </div>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
@@ -225,17 +227,25 @@ const CFODashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-gray-600">Monthly Yield</p>
-                    <p className="text-lg font-semibold text-status-info">$39,900</p>
+                    <p className="text-lg font-semibold text-status-info">
+                      {formatCurrency(yieldData.length > 0 ? yieldData[yieldData.length - 1].unutilized : 0)}
+                    </p>
                   </div>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gradient-to-r from-brand-purple to-brand-magenta rounded-lg text-white">
                   <div>
                     <p className="text-sm text-white/80">Total Monthly Yield</p>
-                    <p className="text-xl font-bold">$227,400</p>
+                    <p className="text-xl font-bold">
+                      {formatCurrency(yieldData.length > 0 ? yieldData[yieldData.length - 1].total : 0)}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-white/80">Annualized Return</p>
-                    <p className="text-xl font-bold">10.56%</p>
+                    <p className="text-xl font-bold">
+                      {stats.totalApprovedCredit > 0 
+                        ? ((stats.totalInterestRevenue * 12 / stats.totalApprovedCredit) * 100).toFixed(2) 
+                        : '0.00'}%
+                    </p>
                   </div>
                 </div>
               </div>
@@ -245,20 +255,22 @@ const CFODashboard = () => {
               <h2 className="text-xl font-semibold mb-4">Pool Status</h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
-                  <span className="font-medium text-green-800">Active Vaults</span>
-                  <span className="text-xl font-bold text-green-800">45</span>
+                  <span className="font-medium text-green-800">Active PSPs</span>
+                  <span className="text-xl font-bold text-green-800">{stats.totalPSPs}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-amber-50 rounded-lg">
-                  <span className="font-medium text-amber-800">Pending Closure</span>
-                  <span className="text-xl font-bold text-amber-800">3</span>
+                  <span className="font-medium text-amber-800">Pending Applications</span>
+                  <span className="text-xl font-bold text-amber-800">{stats.pendingApplications}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-100 rounded-lg">
-                  <span className="font-medium text-gray-800">Closed This Month</span>
-                  <span className="text-xl font-bold text-gray-800">8</span>
+                  <span className="font-medium text-gray-800">Active Financings</span>
+                  <span className="text-xl font-bold text-gray-800">{stats.totalFinancings}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
-                  <span className="font-medium text-purple-800">Total Vaults (All-Time)</span>
-                  <span className="text-xl font-bold text-purple-800">156</span>
+                  <span className="font-medium text-purple-800">Total Credit Exposure</span>
+                  <span className="text-xl font-bold text-purple-800">
+                    {formatCurrency(stats.totalActiveCredit)}
+                  </span>
                 </div>
               </div>
             </div>
