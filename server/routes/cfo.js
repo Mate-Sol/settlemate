@@ -3,6 +3,7 @@ const router = express.Router();
 const { authMiddleware, authorizeRoles } = require('../middleware/auth');
 const PSPProfile = require('../models/PSPProfile');
 const FinancingRequest = require('../models/FinancingRequest');
+const RepaymentRecord = require('../models/RepaymentRecord');
 const { calculateTotalExposure } = require('../services/interestCalculator');
 
 // Apply authentication and authorization
@@ -145,6 +146,128 @@ router.get('/yield-history', async (req, res) => {
       }));
 
     res.json(history);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/cfo/yield-analytics
+// @desc    Get yield analytics comparing expected vs realized yield
+// @access  Private (CFO only)
+router.get('/yield-analytics', async (req, res) => {
+  try {
+    // Get all disbursed financings for accrued (expected) yield
+    const activeFinancings = await FinancingRequest.find({ status: 'Disbursed' });
+    
+    // Calculate total accrued yield (expected)
+    let accruedUtilized = 0;
+    let accruedUnutilized = 0;
+    
+    activeFinancings.forEach(financing => {
+      const interest = financing.accruedInterest;
+      accruedUtilized += interest.utilized || 0;
+      accruedUnutilized += interest.unutilized || 0;
+    });
+    
+    const totalAccruedYield = accruedUtilized + accruedUnutilized;
+    
+    // Get all completed repayments for realized yield
+    const repayments = await RepaymentRecord.find({ status: 'Completed' });
+    
+    const totalInterestReceived = repayments.reduce((sum, r) => sum + (r.actualInterestPaid || 0), 0);
+    const totalRepayments = repayments.length;
+    const averageInterestPerRepayment = totalRepayments > 0 ? totalInterestReceived / totalRepayments : 0;
+    
+    // Calculate variance
+    const variance = totalInterestReceived - totalAccruedYield;
+    const variancePercentage = totalAccruedYield > 0 
+      ? (variance / totalAccruedYield) * 100 
+      : 0;
+    
+    const revenueRate = totalAccruedYield > 0 
+      ? (totalInterestReceived / totalAccruedYield) * 100 
+      : 0;
+    
+    let varianceStatus = 'on_target';
+    if (variancePercentage > 5) varianceStatus = 'over_target';
+    if (variancePercentage < -5) varianceStatus = 'under_target';
+    
+    res.json({
+      accruedYield: {
+        utilized: Math.round(accruedUtilized * 100) / 100,
+        unutilized: Math.round(accruedUnutilized * 100) / 100,
+        total: Math.round(totalAccruedYield * 100) / 100
+      },
+      realizedYield: {
+        totalInterestReceived: Math.round(totalInterestReceived * 100) / 100,
+        totalRepayments,
+        averageInterestPerRepayment: Math.round(averageInterestPerRepayment * 100) / 100
+      },
+      variance: {
+        amount: Math.round(variance * 100) / 100,
+        percentage: Math.round(variancePercentage* 100) / 100,
+        status: varianceStatus
+      },
+      revenueRate: Math.round(revenueRate * 100) / 100
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/cfo/repayment-history
+// @desc    Get repayment history with filters
+// @access  Private (CFO only)
+router.get('/repayment-history', async (req, res) => {
+  try {
+    const { startDate, endDate, pspId } = req.query;
+    
+    let query = { status: 'Completed' };
+    
+    // Apply date filters
+    if (startDate || endDate) {
+      query.repaymentDate = {};
+      if (startDate) query.repaymentDate.$gte = new Date(startDate);
+      if (endDate) query.repaymentDate.$lte = new Date(endDate);
+    }
+    
+    // Apply PSP filter
+    if (pspId) {
+      query.pspId = pspId;
+    }
+    
+    const repayments = await RepaymentRecord.find(query)
+      .populate('pspId', 'companyName')
+      .populate('financingRequestId', 'orderReference')
+      .sort({ repaymentDate: -1 });
+    
+    // Calculate summary
+    const totalPrincipal = repayments.reduce((sum, r) => sum + (r.principalAmount || 0), 0);
+    const totalInterestCollected = repayments.reduce((sum, r) => sum + (r.actualInterestPaid || 0), 0);
+    
+    const formattedRepayments = repayments.map(r => ({
+      _id: r._id,
+      psp: r.pspId?.companyName || 'Unknown',
+      orderReference: r.financingRequestId?.orderReference || 'N/A',
+      principal: r.principalAmount,
+      expectedInterest: r.expectedInterest,
+      actualInterest: r.actualInterestPaid,
+      variance: r.interestVariance,
+      variancePercentage: r.variancePercentage,
+      repaymentDate: r.repaymentDate,
+      txHash: r.txHash
+    }));
+    
+    res.json({
+      repayments: formattedRepayments,
+      summary: {
+        totalRepayments: repayments.length,
+        totalPrincipal: Math.round(totalPrincipal * 100) / 100,
+        totalInterestCollected: Math.round(totalInterestCollected * 100) / 100
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

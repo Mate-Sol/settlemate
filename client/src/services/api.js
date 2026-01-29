@@ -53,6 +53,8 @@ export const pspAPI = {
   requestFinancing: (data) => api.post('/psp/request-financing', data),
   getFinancingRequest: (id) => api.get(`/psp/financing-requests/${id}`),
   getActiveFinancings: () => api.get('/psp/active-financings'),
+  getRepaymentQuote: (requestId) => api.get(`/psp/repayment-quote/${requestId}`),
+  processRepayment: (data) => api.post('/psp/process-repayment', data),
   getPoolStatus: () => api.get('/psp/pool-status'),
 };
 
@@ -73,6 +75,8 @@ export const cfoAPI = {
   getAllFinancings: () => api.get('/cfo/all-financings'),
   getExposure: () => api.get('/cfo/exposure'),
   getYieldHistory: () => api.get('/cfo/yield-history'),
+  getYieldAnalytics: () => api.get('/cfo/yield-analytics'),
+  getRepaymentHistory: (params) => api.get('/cfo/repayment-history', { params }),
 };
 
 export default api;

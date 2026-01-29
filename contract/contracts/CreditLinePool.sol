@@ -27,7 +27,13 @@ contract CreditLinePool {
     
     // Events
     event Drawdown(address indexed pspWallet, uint256 amount, uint256 timestamp, string referenceId);
-    event Repayment(address indexed pspWallet, uint256 principal, uint256 interest, uint256 timestamp);
+    event Repayment(
+        address indexed pspWallet, 
+        uint256 principal, 
+        uint256 actualInterest, 
+        uint256 expectedInterest, 
+        uint256 timestamp
+    );
     event CreditLineActivated(address indexed pspWallet, uint256 creditLimit, uint256 duration);
     event CreditLineClosed(uint256 timestamp);
     event FeesCollected(uint256 utilizedFees, uint256 unutilizedFees, uint256 timestamp);
@@ -112,21 +118,22 @@ contract CreditLinePool {
     /**
      * @dev PSP repays borrowed amount with interest (called from PSP wallet)
      * @param principal Principal amount to repay
+     * @param interestAmount Actual interest amount PSP is paying (can differ from expected)
      */
-    function repay(uint256 principal) external {
+    function repay(uint256 principal, uint256 interestAmount) external {
         require(msg.sender == pspWallet, "Only PSP wallet can repay");
         require(principal > 0, "Principal must be greater than 0");
         require(principal <= utilizedAmount, "Repayment exceeds utilized amount");
         
-        uint256 interest = calculateInterest(principal);
-        uint256 totalRepayment = principal + interest;
+        uint256 expectedInterest = calculateInterest(principal);
+        uint256 totalRepayment = principal + interestAmount;
         
         // Transfer USD-DF tokens from PSP wallet to contract
         usdDF.safeTransferFrom(pspWallet, address(this), totalRepayment);
         
         utilizedAmount -= principal;
         
-        emit Repayment(pspWallet, principal, interest, block.timestamp);
+        emit Repayment(pspWallet, principal, interestAmount, expectedInterest, block.timestamp);
     }
 
     /**

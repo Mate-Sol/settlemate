@@ -21,6 +21,8 @@ const CFODashboard = () => {
   });
   const [yieldData, setYieldData] = useState([]);
   const [financings, setFinancings] = useState([]);
+  const [yieldAnalytics, setYieldAnalytics] = useState(null);
+  
 
   // Fetch dashboard data on mount
   useEffect(() => {
@@ -33,15 +35,17 @@ const CFODashboard = () => {
       setError(null);
       
       // Fetch stats, yield history, and all financings
-      const [statsResponse, yieldResponse, financingsResponse] = await Promise.all([
+      const [statsResponse, yieldResponse, financingsResponse, analyticsResponse] = await Promise.all([
         cfoAPI.getDashboardStats(),
         cfoAPI.getYieldHistory(),
-        cfoAPI.getAllFinancings()
+        cfoAPI.getAllFinancings(),
+        cfoAPI.getYieldAnalytics()
       ]);
 
       setStats(statsResponse.data);
       setYieldData(yieldResponse.data);
       setFinancings(financingsResponse.data.financings);
+      setYieldAnalytics(analyticsResponse.data);
     } catch (err) {
       console.error('Failed to fetch CFO dashboard data:', err);
       setError(err.response?.data?.message || 'Failed to load dashboard data');
@@ -149,6 +153,97 @@ const CFODashboard = () => {
             <h2 className="text-xl font-semibold mb-4">Active Financings (All PSPs)</h2>
             <CFOFinancingsTable financings={financings} />
           </div>
+
+          {/* Yield Performance Analytics */}
+          {yieldAnalytics && (
+            <div className="card mb-8">
+              <h2 className="text-xl font-semibold mb-6">Yield Performance</h2>
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Expected Yield */}
+                <div className="p-5 bg-blue-50 rounded-lg border border-blue-100">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-sm text-blue-600 font-medium mb-1">Expected Yield (Accrued)</p>
+                      <p className="text-xs text-blue-500/70">Based on BIPS & days elapsed</p>
+                    </div>
+                    <TrendingUp className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <p className="text-3xl font-bold text-blue-700 mb-2">
+                    {formatCurrency(yieldAnalytics.accruedYield.total)}
+                  </p>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-blue-600">
+                      <span className="font-semibold">{formatCurrency(yieldAnalytics.accruedYield.utilized)}</span> utilized
+                    </span>
+                    <span className="text-blue-500">
+                      <span className="font-semibold">{formatCurrency(yieldAnalytics.accruedYield.unutilized)}</span> idle
+                    </span>
+                  </div>
+                </div>
+
+                {/* Realized Yield */}
+                <div className="p-5 bg-green-50 rounded-lg border border-green-100">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-sm text-green-600 font-medium mb-1">Realized Yield (Collected)</p>
+                      <p className="text-xs text-green-500/70">Actual interest received</p>
+                    </div>
+                    <DollarSign className="w-5 h-5 text-green-500" />
+                  </div>
+                  <p className="text-3xl font-bold text-green-700 mb-2">
+                    {formatCurrency(yieldAnalytics.realizedYield.totalInterestReceived)}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-green-600">
+                      From <span className="font-semibold">{yieldAnalytics.realizedYield.totalRepayments}</span> repayments
+                    </span>
+                  </div>
+                </div>
+
+                {/* Collection Rate & Variance */}
+                <div className={`p-5 rounded-lg border ${
+                  yieldAnalytics.variance.status === 'over_target' ? 'bg-emerald-50 border-emerald-100' :
+                  yieldAnalytics.variance.status === 'under_target' ? 'bg-amber-50 border-amber-100' :
+                  'bg-gray-50 border-gray-100'
+                }`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className={`text-sm font-medium mb-1 ${
+                        yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-600' :
+                        yieldAnalytics.variance.status === 'under_target' ? 'text-amber-600' :
+                        'text-gray-600'
+                      }`}>Collection Rate</p>
+                      <p className="text-xs text-gray-500">Realized / Expected</p>
+                    </div>
+                    <BarChart3 className={`w-5 h-5 ${
+                      yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-500' :
+                      yieldAnalytics.variance.status === 'under_target' ? 'text-amber-500' :
+                      'text-gray-500'
+                    }`} />
+                  </div>
+                  <p className={`text-3xl font-bold mb-2 ${
+                    yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-700' :
+                    yieldAnalytics.variance.status === 'under_target' ? 'text-amber-700' :
+                    'text-gray-700'
+                  }`}>
+                    {yieldAnalytics.revenueRate.toFixed(1)}%
+                  </p>
+                  <div className="flex items-center gap-1 text-xs">
+                    <span className={
+                      yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-600' :
+                      yieldAnalytics.variance.status === 'under_target' ? 'text-amber-600' :
+                      'text-gray-600'
+                    }>
+                      Variance: <span className="font-semibold">
+                        {yieldAnalytics.variance.amount >= 0 ? '+' : ''}{formatCurrency(yieldAnalytics.variance.amount)}
+                      </span>
+                      {' '}({yieldAnalytics.variance.percentage >= 0 ? '+' : ''}{yieldAnalytics.variance.percentage.toFixed(1)}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Charts Row */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">

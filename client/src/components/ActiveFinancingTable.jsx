@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Clock, DollarSign, Calendar, TrendingUp, CheckCircle, XCircle, Loader2, RefreshCw, Hash, ExternalLink } from 'lucide-react';
+import { Clock, DollarSign, Calendar, TrendingUp, CheckCircle, XCircle, Loader2, RefreshCw, Hash, ExternalLink, Banknote } from 'lucide-react';
+import RepaymentModal from './RepaymentModal';
 
 const ActiveFinancingTable = () => {
   const [financings, setFinancings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [repaymentModal, setRepaymentModal] = useState({ isOpen: false, financing: null });
 
   const fetchFinancings = async () => {
     try {
@@ -53,6 +55,7 @@ const ActiveFinancingTable = () => {
       Pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: <Loader2 className="w-4 h-4 animate-spin" /> },
       Validated: { bg: 'bg-blue-100', text: 'text-blue-800', icon: <Clock className="w-4 h-4" /> },
       Disbursed: { bg: 'bg-green-100', text: 'text-green-800', icon: <CheckCircle className="w-4 h-4" /> },
+      Repaid: { bg: 'bg-purple-100', text: 'text-purple-800', icon: <CheckCircle className="w-4 h-4" /> },
       Rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle className="w-4 h-4" /> },
       Failed: { bg: 'bg-red-100', text: 'text-red-800', icon: <XCircle className="w-4 h-4" /> },
     };
@@ -211,6 +214,7 @@ const ActiveFinancingTable = () => {
                 <th className="px-6 py-4 whitespace-nowrap">Interest (BIPS)</th>
                 <th className="px-6 py-4 whitespace-nowrap">Accrued Interest</th>
                 <th className="px-6 py-4 whitespace-nowrap text-right">Transaction</th>
+                <th className="px-6 py-4 whitespace-nowrap text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
@@ -269,12 +273,38 @@ const ActiveFinancingTable = () => {
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    {financing.status === 'Disbursed' ? (
+                      <button
+                        onClick={() => setRepaymentModal({ isOpen: true, financing })}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-purple text-white text-xs font-medium rounded hover:bg-opacity-90 transition-colors"
+                      >
+                        <Banknote className="w-3.5 h-3.5" />
+                        Repay
+                      </button>
+                    ) : financing.status === 'Repaid' ? (
+                      <span className="text-xs text-purple-600 font-medium">✓ Repaid</span>
+                    ) : (
+                      <span className="text-gray-400 text-xs">-</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Repayment Modal */}
+      <RepaymentModal
+        isOpen={repaymentModal.isOpen}
+        onClose={() => setRepaymentModal({ isOpen: false, financing: null })}
+        financing={repaymentModal.financing}
+        onRepaymentSuccess={() => {
+          fetchFinancings(); // Refresh table
+          setRepaymentModal({ isOpen: false, financing: null });
+        }}
+      />
     </div>
   );
 };

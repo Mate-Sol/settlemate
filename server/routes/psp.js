@@ -5,6 +5,8 @@ const PSPProfile = require('../models/PSPProfile');
 const OrderBook = require('../models/OrderBook');
 const FinancingRequest = require('../models/FinancingRequest');
 const User = require('../models/User');
+const { financingValidationAgent } = require('../workers/financingValidationAgent');
+const { getRepaymentQuote, processRepayment } = require('../workers/repaymentAgent');
 
 // Apply authentication to all PSP routes
 router.use(authMiddleware);
@@ -230,6 +232,81 @@ router.get('/pool-status', async (req, res) => {
     }
 
     res.json(result.data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/psp/repayment-quote/:requestId
+// @desc    Get repayment quote for a financing request
+// @access  Private (PSP only)
+router.get('/repayment-quote/:requestId', async (req, res) => {
+  try {
+    const profile = await PSPProfile.findOne({ userId: req.user.userId });
+    
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found' });
+    }
+
+    const result = await getRepaymentQuote(req.params.requestId);
+    
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
+    }
+    
+    // Verify the financing request belongs to this PSP
+    const financing =await FinancingRequest.findById(req.params.requestId);
+    if (!financing || financing.pspId.toString() !== profile._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized access to this financing request' });
+    }
+    
+    res.json(result.quote);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/psp/process-repayment
+// @desc    Process a repayment (manual trigger or after blockchain confirmation)
+// @access  Private (PSP only)
+router.post('/process-repayment', async (req, res) => {
+  try {
+    const { requestId, principalAmount, actualInterestPaid, txHash, blockNumber } = req.body;
+    
+    const profile = await PSPProfile.findOne({ userId: req.user.userId });
+    
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found' });
+    }
+    
+    // Verify the financing request belongs to this PSP
+    const financing = await FinancingRequest.findById(requestId);
+    if (!financing || financing.pspId.toString() !== profile._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized access to this financing request' });
+    }
+    
+    const result = await processRepayment(requestId, {
+      principalAmount,
+      actualInterestPaid,
+      txHash,
+      blockNumber,
+      pspId: profile._id
+    });
+    
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
+    }
+    
+    res.json({
+      message: 'Repayment processed successfully',
+      financing: result.financing,
+      repaymentRecord: result.repaymentRecord,
+      creditRestored: result.creditRestored,
+      variance: result.variance,
+      variancePercentage: result.variancePercentage
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

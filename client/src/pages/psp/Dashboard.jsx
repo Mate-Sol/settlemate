@@ -253,14 +253,14 @@ const PSPDashboard = () => {
                 </span>
               )}
             </button>
-            <button 
+            {/* <button 
               onClick={() => setShowRepayModal(true)}
               disabled={financialData.usedAmount === 0}
               className="btn-secondary flex items-center gap-2"
             >
               <ArrowUpRight className="w-5 h-5" />
               Repay
-            </button>
+            </button> */}
           </div>
 
           {/* Order Book Table */}

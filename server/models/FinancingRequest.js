@@ -18,7 +18,7 @@ const financingRequestSchema = new mongoose.Schema({
   // Status tracking (async workflow)
   status: {
     type: String,
-    enum: ['Pending', 'Validated', 'Disbursed', 'Rejected', 'Failed'],
+    enum: ['Pending', 'Validated', 'Disbursed', 'Repaid', 'Rejected', 'Failed'],
     default: 'Pending'
   },
   
@@ -26,11 +26,17 @@ const financingRequestSchema = new mongoose.Schema({
   validatedAt: Date,
   disbursedAt: Date,
   dueDate: Date,
+  repaidAt: Date,
   
   // Interest tracking (copied from PSPProfile at disbursement)
   utilizedBips: Number,
   unutilizedBips: Number,
   approvedAmount: Number, // Total credit line at time of financing
+  
+  // Repayment tracking
+  repaymentTxHash: String,
+  actualInterestPaid: Number,
+  expectedInterestAtRepayment: Number,
   
   // Blockchain
   txHash: String,
