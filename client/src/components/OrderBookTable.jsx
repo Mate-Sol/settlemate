@@ -97,21 +97,21 @@ const OrderBookTable = ({ orders, selectedOrders, onSelectionChange }) => {
             {paginatedOrders.map((order) => (
               <tr 
                 key={order.id} 
-                className={`table-row cursor-pointer ${selectedOrders.includes(order.id) ? 'bg-brand-purple/5' : ''}`}
-                onClick={() => handleSelectOne(order.id)}
+                className={`table-row cursor-pointer ${selectedOrders.includes(order._id) ? 'bg-brand-purple/5' : ''}`}
+                onClick={() => handleSelectOne(order._id)}
               >
                 <td className="table-cell" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
-                    checked={selectedOrders.includes(order.id)}
-                    onChange={() => handleSelectOne(order.id)}
+                    checked={selectedOrders.includes(order._id)}
+                    onChange={() => handleSelectOne(order._id)}
                     className="w-4 h-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple"
                   />
                 </td>
                 <td className="table-cell font-mono text-sm">{order.referenceId}</td>
-                <td className="table-cell font-medium">{order.customer}</td>
+                <td className="table-cell font-medium">{order.customerName}</td>
                 <td className="table-cell font-semibold">{formatCurrency(order.amount)}</td>
-                <td className="table-cell text-gray-500">{formatDate(order.date)}</td>
+                <td className="table-cell text-gray-500">{formatDate(order.createdAt)}</td>
                 <td className="table-cell text-gray-500">{formatDate(order.settlementDate)}</td>
                 <td className="table-cell">{getStatusBadge(order.status)}</td>
               </tr>

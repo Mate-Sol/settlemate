@@ -9,7 +9,7 @@ const RequestFinancingModal = ({ isOpen, onClose, selectedOrders, orders, availa
 
   if (!isOpen) return null;
 
-  const selectedOrderData = orders.filter(o => selectedOrders.includes(o.id));
+  const selectedOrderData = orders.filter(o => selectedOrders.includes(o._id));
   const totalSelectedAmount = selectedOrderData.reduce((sum, o) => sum + o.amount, 0);
 
   const formatCurrency = (value) => {
@@ -45,14 +45,15 @@ const RequestFinancingModal = ({ isOpen, onClose, selectedOrders, orders, availa
     setIsSubmitting(true);
     
     try {
-      // TODO: Call blockchain/API
+      // Call async financing request API - uses first selected order as reference
       await onSubmit({
         amount: requestedAmount,
-        orderIds: selectedOrders,
-        referenceIds: selectedOrderData.map(o => o.referenceId),
+        orderReference: selectedOrderData[0]?.referenceId,
       });
       
       setSuccess(true);
+      // Auto-close after 2 seconds
+      setTimeout(handleClose, 2000);
     } catch (err) {
       setError(err.message || 'Failed to submit request');
     } finally {
@@ -70,16 +71,29 @@ const RequestFinancingModal = ({ isOpen, onClose, selectedOrders, orders, availa
   if (success) {
     return (
       <div className="modal-overlay" onClick={handleClose}>
-        <div className="modal-content p-8 text-center" onClick={e => e.stopPropagation()}>
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="modal-content p-8 text-center max-w-md" onClick={e => e.stopPropagation()}>
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-xl font-bold mb-2">Financing Request Submitted</h2>
-          <p className="text-gray-600 mb-6">
-            Your request for {formatCurrency(parseFloat(amount))} has been submitted for validation.
+          <h2 className="text-xl font-bold mb-2">Request Submitted Successfully!</h2>
+          <p className="text-gray-600 mb-4">
+            Your financing request for {formatCurrency(parseFloat(amount))} is being processed.
           </p>
-          <button onClick={handleClose} className="btn-brand">
-            Close
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left mb-6">
+            <p className="text-sm text-blue-800">
+              <strong>What's happening:</strong>
+            </p>
+            <ul className="text-xs text-blue-700 mt-2 space-y-1 list-disc list-inside">
+              <li>Validating credit availability</li>
+              <li>Verifying order reference</li>
+              <li>Preparing smart contract execution</li>
+            </ul>
+            <p className="text-xs text-blue-600 mt-3">
+              Check your dashboard for status updates. Funds will be disbursed shortly!
+            </p>
+          </div>
+          <button onClick={handleClose} className="btn-brand w-full">
+            View Dashboard
           </button>
         </div>
       </div>

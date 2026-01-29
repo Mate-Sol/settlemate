@@ -51,6 +51,8 @@ export const pspAPI = {
   applyForLimit: (data) => api.post('/psp/apply-limit', data),
   getOrderBook: () => api.get('/psp/order-book'),
   requestFinancing: (data) => api.post('/psp/request-financing', data),
+  getFinancingRequest: (id) => api.get(`/psp/financing-requests/${id}`),
+  getActiveFinancings: () => api.get('/psp/active-financings'),
   getPoolStatus: () => api.get('/psp/pool-status'),
 };
 
@@ -67,6 +69,8 @@ export const croAPI = {
 // CFO endpoints
 export const cfoAPI = {
   getStats: () => api.get('/cfo/stats'),
+  getDashboardStats: () => api.get('/cfo/dashboard-stats'),
+  getAllFinancings: () => api.get('/cfo/all-financings'),
   getExposure: () => api.get('/cfo/exposure'),
   getYieldHistory: () => api.get('/cfo/yield-history'),
 };

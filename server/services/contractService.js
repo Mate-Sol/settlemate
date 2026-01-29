@@ -181,6 +181,34 @@ class ContractService {
   }
 
   /**
+   * Execute drawdown from creditline pool
+   * PSP wallet must have already been funded with gas
+   */
+  async drawdownFunds(poolAddress, amount, referenceId = 'ORDER-' + Date.now()) {
+    try {
+      // Use admin wallet to execute drawdown (in production, PSP would do this)
+      const pool = new ethers.Contract(poolAddress, this.creditLinePoolABI, this.adminWallet);
+      const amountWei = ethers.parseUnits(amount.toString(), 6);
+
+      console.log('Executing drawdown:', { poolAddress, amount, referenceId });
+      const tx = await pool.drawdown(amountWei, referenceId);
+      
+      console.log('Waiting for drawdown transaction confirmation...');
+      const receipt = await tx.wait();
+
+      console.log('Drawdown successful! Block:', receipt.blockNumber);
+      return {
+        success: true,
+        transactionHash: tx.hash,
+        blockNumber: receipt.blockNumber
+      };
+    } catch (error) {
+      console.error('Drawdown error:', error);
+      throw new Error(`Drawdown failed: ${error.message}`);
+    }
+  }
+
+  /**
    * Monitor drawdown events
    */
   async monitorDrawdownEvents(poolAddress, callback) {

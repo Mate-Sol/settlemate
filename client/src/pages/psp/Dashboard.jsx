@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { CreditCard, TrendingUp, Wallet, FileText, LogOut, Copy, Check, DollarSign, ArrowUpRight, UserPlus, Loader2 } from 'lucide-react';
 import FinancingStatsCard from '../../components/FinancingStatsCard';
 import OrderBookTable from '../../components/OrderBookTable';
+import ActiveFinancingTable from '../../components/ActiveFinancingTable';
 import RequestFinancingModal from '../../components/RequestFinancingModal';
 import RepayModal from '../../components/RepayModal';
 import { pspAPI } from '../../services/api';
@@ -100,12 +101,10 @@ const PSPDashboard = () => {
 
   const handleFinancingSubmit = async (data) => {
     try {
+      // Call async financing API - returns immediately with requestId
       await pspAPI.requestFinancing({
         amount: data.amount,
-        orderBookReferenceIds: selectedOrders.map(id => {
-          const order = orders.find(o => o.id === id);
-          return order?.referenceId;
-        }).filter(Boolean),
+        orderReference: data.orderReference,
       });
       
       // Refresh data after successful request
@@ -232,6 +231,11 @@ const PSPDashboard = () => {
               usedAmount={financialData.usedAmount}
               availableAmount={financialData.availableAmount}
             />
+          </div>
+
+          {/* Active Financings Section */}
+          <div className="mb-8">
+            <ActiveFinancingTable />
           </div>
 
           {/* Action Buttons */}

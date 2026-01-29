@@ -114,11 +114,11 @@ router.get('/order-book', async (req, res) => {
 });
 
 // @route   POST /api/psp/request-financing
-// @desc    Request financing (drawdown)
+// @desc    Request financing (drawdown) - ASYNC WORKFLOW
 // @access  Private (PSP only)
 router.post('/request-financing', async (req, res) => {
   try {
-    const { amount, orderBookReferenceIds } = req.body;
+    const { amount, orderReference } = req.body;
 
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
     
@@ -126,28 +126,85 @@ router.post('/request-financing', async (req, res) => {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
-    if (profile.creditLineStatus !== 'Approved') {
-      return res.status(400).json({ message: 'Credit line not approved' });
+    // Basic validation - don't check credit availability here (validation agent does that)
+    if (!amount || !orderReference) {
+      return res.status(400).json({ message: 'Amount and order reference are required' });
     }
 
-    if (!profile.assignedPoolAddress) {
-      return res.status(400).json({ message: 'No credit pool assigned' });
-    }
-
-    // Create financing request
+    // Create financing request with Pending status
     const financingRequest = new FinancingRequest({
       pspId: profile._id,
       amount,
-      orderBookReferenceIds,
+      orderReference,
       status: 'Pending'
     });
 
     await financingRequest.save();
 
-    res.json({ 
-      message: 'Financing request submitted', 
-      request: financingRequest 
+    // Trigger validation agent in background (DON'T AWAIT!)
+    const { validateFinancingRequest } = require('../workers/financingValidationAgent');
+    validateFinancingRequest(financingRequest._id.toString()).catch(err => {
+      console.error('Async validation error:', err);
     });
+
+    // Return immediately with request ID
+    res.json({
+      message: 'Financing request submitted successfully',
+      requestId: financingRequest._id,
+      status: 'Pending'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/psp/financing-requests/:id
+// @desc    Get financing request status (polling endpoint)
+// @access  Private (PSP only)
+router.get('/financing-requests/:id', async (req, res) => {
+  try {
+    const profile = await PSPProfile.findOne({ userId: req.user.userId });
+    
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found' });
+    }
+
+    const request = await FinancingRequest.findOne({
+      _id: req.params.id,
+      pspId: profile._id
+    });
+
+    if (!request) {
+      return res.status(404).json({ message: 'Financing request not found' });
+    }
+
+    // Return request with calculated interest
+    res.json(request);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/psp/active-financings
+// @desc    Get all active financings for PSP with interest calculations
+// @access  Private (PSP only)
+router.get('/active-financings', async (req, res) => {
+  try {
+    const profile = await PSPProfile.findOne({ userId: req.user.userId });
+    
+    if (!profile) {
+      return res.status(404).json({ message: 'Profile not found' });
+    }
+
+    const financings = await FinancingRequest.find({
+      pspId: profile._id,
+      status: { $in: ['Pending', 'Validated', 'Disbursed'] }
+    }).sort({ createdAt: -1 });
+
+    // Return with virtual fields (interest calculated)
+    res.json(financings);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

@@ -1,24 +1,58 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { CreditCard, BarChart3, PieChart as PieChartIcon, TrendingUp, LogOut, DollarSign } from 'lucide-react';
+import { CreditCard, BarChart3, PieChart as PieChartIcon, TrendingUp, LogOut, DollarSign, Loader2 } from 'lucide-react';
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { cfoAPI } from '../../../services/api';
 
 const CFODashboard = () => {
   const { user, logout } = useAuth();
+  
+  // State for backend data
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    totalPSPs: 0,
+    totalApprovedCredit: 0,
+    totalActiveCredit: 0,
+    totalFinancings: 0,
+    pendingApplications: 0,
+    totalInterestRevenue: 0
+  });
+  const [yieldData, setYieldData] = useState([]);
+  const [financings, setFinancings] = useState([]);
 
-  // Mock data for exposure distribution
+  // Fetch dashboard data on mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch stats, yield history, and all financings
+      const [statsResponse, yieldResponse, financingsResponse] = await Promise.all([
+        cfoAPI.getDashboardStats(),
+        cfoAPI.getYieldHistory(),
+        cfoAPI.getAllFinancings()
+      ]);
+
+      setStats(statsResponse.data);
+      setYieldData(yieldResponse.data);
+      setFinancings(financingsResponse.data.financings);
+    } catch (err) {
+      console.error('Failed to fetch CFO dashboard data:', err);
+      setError(err.response?.data?.message || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mock data for exposure distribution (will be updated)
   const exposureData = [
-    { name: 'Active Loans', value: 12500000, color: '#10b981' },
-    { name: 'Available Liquidity', value: 13300000, color: '#6366f1' },
-  ];
-
-  // Mock data for monthly yield
-  const yieldData = [
-    { month: 'Jul', utilized: 165000, unutilized: 38000 },
-    { month: 'Aug', utilized: 172000, unutilized: 39500 },
-    { month: 'Sep', utilized: 180000, unutilized: 39200 },
-    { month: 'Oct', utilized: 175000, unutilized: 40100 },
-    { month: 'Nov', utilized: 183000, unutilized: 39800 },
-    { month: 'Dec', utilized: 187500, unutilized: 39900 },
+    { name: 'Active Loans', value: stats.totalActiveCredit, color: '#10b981' },
+    { name: 'Available Liquidity', value: stats.totalApprovedCredit - stats.totalActiveCredit, color: '#6366f1' },
   ];
 
   const formatCurrency = (value) => {
@@ -28,6 +62,17 @@ const CFODashboard = () => {
       minimumFractionDigits: 0,
     }).format(value);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-brand-purple mx-auto mb-4" />
+          <p className="text-gray-600">Loading CFO Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -80,21 +125,21 @@ const CFODashboard = () => {
             <div className="stats-card">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="w-5 h-5 text-brand-purple" />
-                <span className="stats-label">Total Treasury</span>
+                <span className="stats-label">Total Approved Credit</span>
               </div>
-              <span className="stats-value text-gradient">$25.8M</span>
+              <span className="stats-value text-gradient">{formatCurrency(stats.totalApprovedCredit)}</span>
             </div>
             <div className="stats-card">
-              <span className="stats-label">Total Exposure</span>
-              <span className="stats-value text-status-warning">$12.5M</span>
+              <span className="stats-label">Total Active Credit</span>
+              <span className="stats-value text-status-warning">{formatCurrency(stats.totalActiveCredit)}</span>
             </div>
             <div className="stats-card">
-              <span className="stats-label">Available Liquidity</span>
-              <span className="stats-value text-status-success">$13.3M</span>
+              <span className="stats-label">Active Financings</span>
+              <span className="stats-value text-status-success">{stats.totalFinancings}</span>
             </div>
             <div className="stats-card">
-              <span className="stats-label">Utilization Rate</span>
-              <span className="stats-value">48.4%</span>
+              <span className="stats-label">Interest Revenue (YTD)</span>
+              <span className="stats-value">{formatCurrency(stats.totalInterestRevenue)}</span>
             </div>
           </div>
 
