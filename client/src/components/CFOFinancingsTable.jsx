@@ -1,4 +1,4 @@
-import { DollarSign, Calendar, TrendingUp, CheckCircle, XCircle, Loader2, Clock } from 'lucide-react';
+import { DollarSign, Calendar, TrendingUp, CheckCircle, XCircle, Loader2, Clock, ExternalLink } from 'lucide-react';
 
 const CFOFinancingsTable = ({ financings }) => {
   const formatCurrency = (value) => {
@@ -48,71 +48,171 @@ const CFOFinancingsTable = ({ financings }) => {
   }
 
   return (
-    <div className="card overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>PSP Company</th>
-              <th>Order Reference</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Date Issued</th>
-              <th>Days Elapsed</th>
-              <th>Accrued Interest</th>
-              <th className="text-right">TX Hash</th>
-            </tr>
-          </thead>
-          <tbody>
-            {financings.map((financing) => (
-              <tr key={financing._id}>
-                <td className="font-semibold">{financing.pspId?.companyName || 'Unknown PSP'}</td>
-                <td className="font-mono text-sm">{financing.orderReference}</td>
-                <td className="font-semibold">{formatCurrency(financing.amount)}</td>
-                <td>{getStatusBadge(financing.status)}</td>
-                <td>{formatDate(financing.disbursedAt || financing.createdAt)}</td>
-                <td>
-                  {financing.status === 'Disbursed' ? (
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      {financing.daysElapsed || 0} days
-                    </span>
-                  ) : (
-                    <span className="text-gray-400">-</span>
-                  )}
-                </td>
-                <td>
-                  {financing.status === 'Disbursed' && financing.accruedInterest ? (
-                    <div className="flex items-center gap-1 text-green-600 font-medium">
-                      <TrendingUp className="w-4 h-4" />
-                      {formatCurrency(financing.accruedInterest.total)}
-                    </div>
-                  ) : financing.status === 'Rejected' || financing.status === 'Failed' ? (
-                    <span className="text-red-600 text-sm">{financing.rejectionReason || financing.failureReason}</span>
-                  ) : (
-                    <span className="text-gray-400">Processing...</span>
-                  )}
-                </td>
-                <td className="text-right">
-                  {financing.txHash ? (
-                    <a
-                      href={`https://sepolia.etherscan.io/tx/${financing.txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-brand-purple hover:underline text-sm font-mono"
-                    >
-                      {financing.txHash.substring(0, 8)}...
-                    </a>
-                  ) : (
-                    <span className="text-gray-400 text-sm">-</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  <>
+  {/* --- Responsive Container --- */}
+<div className="space-y-4">
+  
+  {/* 1. MOBILE VIEW (Cards) - Visible only on small screens */}
+  <div className="grid grid-cols-1 gap-4 md:hidden">
+    {financings.map((financing) => (
+      <div key={financing._id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 space-y-3">
+        
+        {/* Header: PSP Company & Status */}
+        <div className="flex justify-between items-start gap-2">
+          <div>
+            <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">PSP</span>
+            <div className="font-semibold text-gray-900">
+              {financing.pspId?.companyName || 'Unknown PSP'}
+            </div>
+          </div>
+          {getStatusBadge(financing.status)}
+        </div>
+
+        {/* Order Ref & Amount */}
+        <div className="flex justify-between items-end border-b border-gray-100 pb-3">
+          <div>
+             <span className="text-xs text-gray-500 block mb-0.5">Order Ref</span>
+             <span className="font-mono text-sm bg-gray-50 px-1.5 py-0.5 rounded text-gray-700">
+               {financing.orderReference}
+             </span>
+          </div>
+          <div className="text-right">
+            <span className="text-xs text-gray-500 block mb-0.5">Amount</span>
+            <span className="text-xl font-bold text-gray-900">{formatCurrency(financing.amount)}</span>
+          </div>
+        </div>
+
+        {/* Details Grid */}
+        <div className="grid grid-cols-2 gap-y-3 text-sm">
+          <div>
+            <span className="text-xs text-gray-500 block">Date Issued</span>
+            <span className="text-gray-700">{formatDate(financing.disbursedAt || financing.createdAt)}</span>
+          </div>
+          
+          <div>
+            <span className="text-xs text-gray-500 block">Duration</span>
+            {financing.status === 'Disbursed' ? (
+              <span className="flex items-center gap-1 text-gray-700">
+                <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                {financing.daysElapsed || 0} days
+              </span>
+            ) : <span className="text-gray-400">-</span>}
+          </div>
+
+          <div className="col-span-2">
+            <span className="text-xs text-gray-500 block">Accrued Interest</span>
+             {financing.status === 'Disbursed' && financing.accruedInterest ? (
+                <div className="flex items-center gap-1 text-green-600 font-medium">
+                  <TrendingUp className="w-4 h-4" />
+                  {formatCurrency(financing.accruedInterest.total)}
+                </div>
+              ) : financing.status === 'Rejected' || financing.status === 'Failed' ? (
+                <span className="text-red-600 text-xs">{financing.rejectionReason || financing.failureReason}</span>
+              ) : (
+                <span className="text-gray-400 italic text-xs">Processing...</span>
+              )}
+          </div>
+        </div>
+
+        {/* Footer: TX Hash */}
+        {financing.txHash && (
+           <div className="pt-2">
+            <a
+              href={`https://sepolia.etherscan.io/tx/${financing.txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-full p-2 bg-gray-50 hover:bg-gray-100 border border-gray-100 rounded text-xs font-mono text-brand-purple transition-colors"
+            >
+              Tx: {financing.txHash.substring(0, 20)}...
+              <ExternalLink className="w-3 h-3 ml-2" />
+            </a>
+           </div>
+        )}
       </div>
+    ))}
+  </div>
+
+  {/* 2. DESKTOP VIEW (Table) - Visible on medium screens and up */}
+  <div className="hidden md:block bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="w-full text-left border-collapse">
+        <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider font-semibold border-b border-gray-200">
+          <tr>
+            <th className="px-6 py-4 whitespace-nowrap">PSP Company</th>
+            <th className="px-6 py-4 whitespace-nowrap">Order Reference</th>
+            <th className="px-6 py-4 whitespace-nowrap">Amount</th>
+            <th className="px-6 py-4 whitespace-nowrap">Status</th>
+            <th className="px-6 py-4 whitespace-nowrap">Date Issued</th>
+            <th className="px-6 py-4 whitespace-nowrap">Days Elapsed</th>
+            <th className="px-6 py-4 whitespace-nowrap">Accrued Interest</th>
+            <th className="px-6 py-4 whitespace-nowrap text-right">TX Hash</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
+          {financings.map((financing) => (
+            <tr key={financing._id} className="hover:bg-gray-50 transition-colors">
+              <td className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
+                {financing.pspId?.companyName || 'Unknown PSP'}
+              </td>
+              <td className="px-6 py-4 font-mono text-xs whitespace-nowrap">
+                {financing.orderReference}
+              </td>
+              <td className="px-6 py-4 font-medium whitespace-nowrap">
+                {formatCurrency(financing.amount)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {getStatusBadge(financing.status)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {formatDate(financing.disbursedAt || financing.createdAt)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {financing.status === 'Disbursed' ? (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    {financing.daysElapsed || 0} days
+                  </span>
+                ) : (
+                  <span className="text-gray-400">-</span>
+                )}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {financing.status === 'Disbursed' && financing.accruedInterest ? (
+                  <div className="flex items-center gap-1 text-green-600 font-medium">
+                    <TrendingUp className="w-4 h-4" />
+                    {formatCurrency(financing.accruedInterest.total)}
+                  </div>
+                ) : financing.status === 'Rejected' || financing.status === 'Failed' ? (
+                  <span className="text-red-600 text-xs max-w-[150px] truncate block" title={financing.rejectionReason}>
+                    {financing.rejectionReason || financing.failureReason}
+                  </span>
+                ) : (
+                  <span className="text-gray-400 text-xs italic">Processing...</span>
+                )}
+              </td>
+              <td className="px-6 py-4 text-right whitespace-nowrap">
+                {financing.txHash ? (
+                  <a
+                    href={`https://sepolia.etherscan.io/tx/${financing.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-purple hover:underline text-xs font-mono inline-flex items-center gap-1"
+                  >
+                    {financing.txHash.substring(0, 8)}...
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ) : (
+                  <span className="text-gray-400 text-sm">-</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
+  </div>
+</div>
+  </>
   );
 };
 
