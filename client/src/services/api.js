@@ -76,6 +76,7 @@ export const cfoAPI = {
   getAllFinancings: () => api.get('/cfo/all-financings'),
   getExposure: () => api.get('/cfo/exposure'),
   getYieldHistory: () => api.get('/cfo/yield-history'),
+  getEarnedYieldHistory: () => api.get('/cfo/earned-yield-history'),
   getYieldAnalytics: () => api.get('/cfo/yield-analytics'),
   getRepaymentHistory: (params) => api.get('/cfo/repayment-history', { params }),
 };

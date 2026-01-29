@@ -152,6 +152,105 @@ router.get('/yield-history', async (req, res) => {
   }
 });
 
+// @route   GET /api/cfo/earned-yield-history
+// @desc    Get earned yield by month (utilized + unutilized)
+// @access  Private (CFO only)
+router.get('/earned-yield-history', async (req, res) => {
+  try {
+    // Get all disbursed financings
+    const financings = await FinancingRequest.find({ 
+      status: { $in: ['Disbursed', 'Repaid'] }
+    })
+    .populate('pspId', 'companyName creditLineDuration utilizedBips unutilizedBips approvedAmount')
+    .sort({ disbursedAt: 1 });
+
+    // Group by month and calculate utilized/unutilized yield
+    const monthlyData = {};
+
+    financings.forEach(financing => {
+      if (!financing.disbursedAt) return;
+
+      const disbursedDate = new Date(financing.disbursedAt);
+      const monthKey = `${disbursedDate.getFullYear()}-${String(disbursedDate.getMonth() + 1).padStart(2, '0')}`;
+
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = {
+          month: monthKey,
+          utilizedYield: 0,
+          unutilizedYield: 0,
+          totalYield: 0,
+          financingsCount: 0
+        };
+      }
+
+      // Calculate yield for this financing
+      const principal = financing.amount || 0;
+      const utilizedBips = financing.pspId?.utilizedBips || 0;
+      const unutilizedBips = financing.pspId?.unutilizedBips || 0;
+      const creditLimit = financing.pspId?.approvedAmount || principal;
+      
+      // Determine the end date for yield calculation
+      let endDate;
+      if (financing.status === 'Repaid' && financing.repaymentDate) {
+        endDate = new Date(financing.repaymentDate);
+      } else {
+        endDate = new Date(); // Current date for ongoing financings
+      }
+
+      // Calculate days held
+      const daysHeld = Math.max(0, Math.ceil((endDate - disbursedDate) / (1000 * 60 * 60 * 24)));
+      
+      // Calculate utilized yield (on the amount disbursed)
+      const utilizedYield = (principal * utilizedBips * daysHeld) / (10000 * 365);
+      
+      // Calculate unutilized yield (on unused credit)
+      const unutilizedAmount = Math.max(0, creditLimit - principal);
+      const unutilizedYield = (unutilizedAmount * unutilizedBips * daysHeld) / (10000 * 365);
+
+      monthlyData[monthKey].utilizedYield += utilizedYield;
+      monthlyData[monthKey].unutilizedYield += unutilizedYield;
+      monthlyData[monthKey].totalYield += (utilizedYield + unutilizedYield);
+      monthlyData[monthKey].financingsCount++;
+    });
+
+    // Convert to array and sort by month
+    const chartData = Object.values(monthlyData).sort((a, b) => 
+      a.month.localeCompare(b.month)
+    );
+
+    // Format month labels (e.g., "Jan 2024")
+    const formattedData = chartData.map(item => ({
+      month: new Date(item.month + '-01').toLocaleDateString('en-US', { 
+        month: 'short', 
+        year: 'numeric' 
+      }),
+      utilizedYield: Math.round(item.utilizedYield * 100) / 100,
+      unutilizedYield: Math.round(item.unutilizedYield * 100) / 100,
+      totalYield: Math.round(item.totalYield * 100) / 100,
+      financingsCount: item.financingsCount
+    }));
+
+    res.json({
+      success: true,
+      data: formattedData,
+      summary: {
+        totalUtilizedYield: formattedData.reduce((sum, item) => sum + item.utilizedYield, 0),
+        totalUnutilizedYield: formattedData.reduce((sum, item) => sum + item.unutilizedYield, 0),
+        totalYield: formattedData.reduce((sum, item) => sum + item.totalYield, 0),
+        monthsCount: formattedData.length
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching earned yield history:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch earned yield history',
+      error: error.message 
+    });
+  }
+});
+
+
 // @route   GET /api/cfo/yield-analytics
 // @desc    Get yield analytics comparing expected vs realized yield
 // @access  Private (CFO only)

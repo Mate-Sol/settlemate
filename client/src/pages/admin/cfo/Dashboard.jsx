@@ -4,6 +4,8 @@ import { CreditCard, BarChart3, PieChart as PieChartIcon, TrendingUp, LogOut, Do
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { cfoAPI } from '../../../services/api';
 import CFOFinancingsTable from '../../../components/CFOFinancingsTable';
+import EarnedYieldChart from '../../../components/EarnedYieldChart';
+
 
 const CFODashboard = () => {
   const { user, logout } = useAuth();
@@ -158,6 +160,8 @@ const CFODashboard = () => {
             <CFOFinancingsTable financings={financings} />
           </div>
 
+
+
           {/* Yield Performance Analytics */}
           {yieldAnalytics && (
             <div className="card mb-8">
@@ -206,25 +210,25 @@ const CFODashboard = () => {
 
                 {/* Collection Rate & Variance */}
                 <div className={`p-5 rounded-lg border ${yieldAnalytics.variance.status === 'over_target' ? 'bg-emerald-50 border-emerald-100' :
-                    yieldAnalytics.variance.status === 'under_target' ? 'bg-amber-50 border-amber-100' :
-                      'bg-gray-50 border-gray-100'
+                  yieldAnalytics.variance.status === 'under_target' ? 'bg-amber-50 border-amber-100' :
+                    'bg-gray-50 border-gray-100'
                   }`}>
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p className={`text-sm font-medium mb-1 ${yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-600' :
-                          yieldAnalytics.variance.status === 'under_target' ? 'text-amber-600' :
-                            'text-gray-600'
+                        yieldAnalytics.variance.status === 'under_target' ? 'text-amber-600' :
+                          'text-gray-600'
                         }`}>Collection Rate</p>
                       <p className="text-xs text-gray-500">Realized / Expected</p>
                     </div>
                     <BarChart3 className={`w-5 h-5 ${yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-500' :
-                        yieldAnalytics.variance.status === 'under_target' ? 'text-amber-500' :
-                          'text-gray-500'
+                      yieldAnalytics.variance.status === 'under_target' ? 'text-amber-500' :
+                        'text-gray-500'
                       }`} />
                   </div>
                   <p className={`text-3xl font-bold mb-2 ${yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-700' :
-                      yieldAnalytics.variance.status === 'under_target' ? 'text-amber-700' :
-                        'text-gray-700'
+                    yieldAnalytics.variance.status === 'under_target' ? 'text-amber-700' :
+                      'text-gray-700'
                     }`}>
                     {yieldAnalytics.revenueRate.toFixed(1)}%
                   </p>
@@ -369,6 +373,14 @@ const CFODashboard = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Yield Stats */}
+          <div className="grid md:grid-cols-1 gap-6 mb-8">
+            {/* Earned Yield Chart */}
+            <EarnedYieldChart yieldData={yieldData} />
+
+
           </div>
         </div>
       </main>
