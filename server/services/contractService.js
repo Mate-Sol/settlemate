@@ -32,6 +32,9 @@ class ContractService {
       "function getRemainingCredit() external view returns (uint256)",
       "function pauseCreditLine() external",
       "function closeCreditLine() external",
+      "function getRemainingDays() external view returns (uint256)",
+      "function isExpired() external view returns (bool)",
+      "function expiryTime() external view returns (uint256)",
       "event Drawdown(address indexed psp, uint256 amount, uint256 timestamp, string referenceId)",
       "event Repayment(address indexed psp, uint256 principal, uint256 interest, uint256 timestamp)"
     ];
@@ -276,6 +279,35 @@ class ContractService {
       };
     } catch (error) {
       console.error('Contract repayment error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Get remaining days until credit line expiry
+   * @param {string} poolAddress - Address of the CreditLinePool contract
+   * @returns {object} Expiry information
+   */
+  async getRemainingDays(poolAddress) {
+    try {
+      const pool = new ethers.Contract(poolAddress, this.creditLinePoolABI, this.provider);
+      
+      const remainingDays = await pool.getRemainingDays();
+      const isExpired = await pool.isExpired();
+      const expiryTime = await pool.expiryTime();
+      
+      return {
+        success: true,
+        remainingDays: Number(remainingDays),
+        isExpired,
+        expiryTime: Number(expiryTime),
+        expiryDate: new Date(Number(expiryTime) * 1000)
+      };
+    } catch (error) {
+      console.error('Error getting remaining days:', error);
       return {
         success: false,
         error: error.message

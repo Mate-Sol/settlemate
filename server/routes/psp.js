@@ -30,6 +30,39 @@ router.get('/profile', async (req, res) => {
   }
 });
 
+// @route   GET /api/psp/credit-line-expiry
+// @desc    Get credit line expiry status
+// @access  Private (PSP only)
+router.get('/credit-line-expiry', async (req, res) => {
+  try {
+    const profile = await PSPProfile.findOne({ userId: req.user.userId });
+    
+    if (!profile || !profile.assignedPoolAddress) {
+      return res.status(404).json({ message: 'No active credit line found' });
+    }
+
+    const contractService = require('../services/contractService');
+    const expiryInfo = await contractService.getRemainingDays(profile.assignedPoolAddress);
+
+    if (!expiryInfo.success) {
+       return res.status(500).json({ message: 'Failed to fetch expiry information', error: expiryInfo.error });
+    }
+
+    res.json({
+      success: true,
+      poolAddress: profile.assignedPoolAddress,
+      remainingDays: expiryInfo.remainingDays,
+      isExpired: expiryInfo.isExpired,
+      expiryDate: expiryInfo.expiryDate,
+      creditLineDuration: profile.creditLineDuration,
+      approvalDate: profile.approvalDate
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   PUT /api/psp/profile
 // @desc    Update PSP profile
 // @access  Private (PSP only)

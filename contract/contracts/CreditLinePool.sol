@@ -280,4 +280,28 @@ contract CreditLinePool {
     function getTokenAddress() external view returns (address) {
         return address(usdDF);
     }
+
+    /**
+     * @dev Check if credit line has expired
+     */
+    function isExpired() external view returns (bool) {
+        return block.timestamp > expiryTime;
+    }
+
+    /**
+     * @dev Get remaining days until expiry
+     */
+    function getRemainingDays() external view returns (uint256) {
+        if (block.timestamp >= expiryTime) {
+            return 0;
+        }
+        return (expiryTime - block.timestamp) / 86400; // Convert seconds to days
+    }
+
+    /**
+     * @dev Get days since deployment
+     */
+    function getDaysSinceDeployment() external view returns (uint256) {
+        return (block.timestamp - deploymentTime) / 86400;
+    }
 }

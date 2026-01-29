@@ -6,6 +6,7 @@ import OrderBookTable from '../../components/OrderBookTable';
 import ActiveFinancingTable from '../../components/ActiveFinancingTable';
 import RequestFinancingModal from '../../components/RequestFinancingModal';
 import RepayModal from '../../components/RepayModal';
+import CreditLineExpiryBanner from '../../components/CreditLineExpiryBanner';
 import { pspAPI } from '../../services/api';
 
 const PSPDashboard = () => {
@@ -27,8 +28,8 @@ const PSPDashboard = () => {
   });
 
   // Wallet address from backend
-  const walletAddress = profile?.walletAddress ? 
-    `${profile.walletAddress.slice(0, 6)}...${profile.walletAddress.slice(-8)}` : 
+  const walletAddress = profile?.walletAddress ?
+    `${profile.walletAddress.slice(0, 6)}...${profile.walletAddress.slice(-8)}` :
     'Not assigned';
   const fullWalletAddress = profile?.walletAddress || '';
 
@@ -44,7 +45,7 @@ const PSPDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Fetch profile and order book in parallel
       const [profileResponse, orderBookResponse] = await Promise.all([
         pspAPI.getProfile(),
@@ -59,7 +60,7 @@ const PSPDashboard = () => {
         try {
           const poolResponse = await pspAPI.getPoolStatus();
           setPoolStatus(poolResponse.data);
-          
+
           // Update financial data from blockchain
           setFinancialData({
             totalLimit: parseFloat(poolResponse.data.creditLimit) || 0,
@@ -106,10 +107,10 @@ const PSPDashboard = () => {
         amount: data.amount,
         orderReference: data.orderReference,
       });
-      
+
       // Refresh data after successful request
       await fetchDashboardData();
-      
+
       // Clear selection
       setSelectedOrders([]);
     } catch (err) {
@@ -122,7 +123,7 @@ const PSPDashboard = () => {
     // Repay functionality would be implemented via smart contract
     // For now, simulate the repayment
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     // Refresh pool status after repayment
     await fetchDashboardData();
   };
@@ -162,7 +163,7 @@ const PSPDashboard = () => {
             <span className="text-xl font-bold">CredMate</span>
           </div>
         </div>
-        
+
         <nav className="p-4 space-y-2">
           <a href="/psp/dashboard" className="sidebar-link active">
             <TrendingUp className="w-5 h-5" />
@@ -176,14 +177,14 @@ const PSPDashboard = () => {
             <Wallet className="w-5 h-5" />
             Wallet
           </a>
-           <a href="/psp/onboarding" className="sidebar-link">
+          <a href="/psp/onboarding" className="sidebar-link">
             <UserPlus className="w-5 h-5" />
             Profile
           </a>
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-          <button 
+          <button
             onClick={logout}
             className="sidebar-link w-full justify-start text-white/60 hover:text-white"
           >
@@ -197,12 +198,13 @@ const PSPDashboard = () => {
       <main className="ml-64 p-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
+          <CreditLineExpiryBanner />
           <header className="mb-8 flex justify-between items-start">
             <div>
               <h1 className="page-header mb-1">Welcome, {user?.name}</h1>
               <p className="text-gray-600">Manage your credit line and financing requests</p>
             </div>
-            
+
             {/* Wallet Display */}
             <div className="card flex items-center gap-3">
               <div className="w-10 h-10 bg-brand-gradient rounded-lg flex items-center justify-center">
@@ -212,7 +214,7 @@ const PSPDashboard = () => {
                 <p className="text-xs text-gray-500">Assigned Wallet</p>
                 <div className="flex items-center gap-2">
                   <code className="text-sm font-mono">{walletAddress}</code>
-                  <button 
+                  <button
                     onClick={copyAddress}
                     className="p-1 hover:bg-gray-100 rounded transition-colors"
                     title="Copy full address"
@@ -226,7 +228,7 @@ const PSPDashboard = () => {
 
           {/* Stats Card with Gauge */}
           <div className="mb-8">
-            <FinancingStatsCard 
+            <FinancingStatsCard
               totalLimit={financialData.totalLimit}
               usedAmount={financialData.usedAmount}
               availableAmount={financialData.availableAmount}
@@ -240,7 +242,7 @@ const PSPDashboard = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-4 mb-8">
-            <button 
+            <button
               onClick={() => setShowFinancingModal(true)}
               disabled={selectedOrders.length === 0}
               className="btn-brand flex items-center gap-2"
@@ -264,7 +266,7 @@ const PSPDashboard = () => {
           </div>
 
           {/* Order Book Table */}
-          <OrderBookTable 
+          <OrderBookTable
             orders={orders}
             selectedOrders={selectedOrders}
             onSelectionChange={setSelectedOrders}
@@ -273,7 +275,7 @@ const PSPDashboard = () => {
       </main>
 
       {/* Modals */}
-      <RequestFinancingModal 
+      <RequestFinancingModal
         isOpen={showFinancingModal}
         onClose={() => setShowFinancingModal(false)}
         selectedOrders={selectedOrders}
@@ -282,7 +284,7 @@ const PSPDashboard = () => {
         onSubmit={handleFinancingSubmit}
       />
 
-      <RepayModal 
+      <RepayModal
         isOpen={showRepayModal}
         onClose={() => setShowRepayModal(false)}
         usedAmount={financialData.usedAmount}

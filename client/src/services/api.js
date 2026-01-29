@@ -56,6 +56,7 @@ export const pspAPI = {
   getRepaymentQuote: (requestId) => api.get(`/psp/repayment-quote/${requestId}`),
   processRepayment: (data) => api.post('/psp/process-repayment', data),
   getPoolStatus: () => api.get('/psp/pool-status'),
+  getCreditLineExpiry: () => api.get('/psp/credit-line-expiry'),
 };
 
 // CRO endpoints
