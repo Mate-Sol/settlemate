@@ -42,7 +42,7 @@ const Wallet = () => {
             <span className="text-xl font-bold">CredMate</span>
           </div>
         </div>
-        
+
         <nav className="p-4 space-y-2">
           <a href="/psp/dashboard" className="sidebar-link">
             <TrendingUp className="w-5 h-5" />
@@ -63,7 +63,7 @@ const Wallet = () => {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-          <button 
+          <button
             onClick={logout}
             className="sidebar-link w-full justify-start text-white/60 hover:text-white"
           >
@@ -88,14 +88,14 @@ const Wallet = () => {
                 <p className="text-white/70 text-sm">Wallet Address</p>
                 <div className="flex items-center gap-3 mt-1">
                   <code className="text-lg font-mono">{shortAddress}</code>
-                  <button 
+                  <button
                     onClick={copyAddress}
                     className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                     title="Copy full address"
                   >
                     {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                   </button>
-                  <a 
+                  <a
                     href={`https://sepolia.etherscan.io/address/${walletAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -121,9 +121,8 @@ const Wallet = () => {
               {transactions.map(tx => (
                 <div key={tx.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      tx.type === 'Disbursement' ? 'bg-green-100' : 'bg-blue-100'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'Disbursement' ? 'bg-green-100' : 'bg-blue-100'
+                      }`}>
                       {tx.type === 'Disbursement' ? (
                         <ArrowDownLeft className="w-5 h-5 text-green-600" />
                       ) : (
@@ -139,7 +138,7 @@ const Wallet = () => {
                     <p className={`font-semibold ${tx.type === 'Disbursement' ? 'text-green-600' : 'text-blue-600'}`}>
                       {tx.type === 'Disbursement' ? '+' : '-'}{formatCurrency(tx.amount)}
                     </p>
-                    <a 
+                    <a
                       href={`https://sepolia.etherscan.io/tx/${tx.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"

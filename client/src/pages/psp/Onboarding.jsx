@@ -84,10 +84,10 @@ const Onboarding = () => {
             <FileText className="w-5 h-5" />
             Order Book
           </a>
-          <a href="/psp/wallet" className="sidebar-link">
+          {/* <a href="/psp/wallet" className="sidebar-link">
             <Wallet className="w-5 h-5" />
             Wallet
-          </a>
+          </a> */}
           <a href="/psp/onboarding" className="sidebar-link active">
             <UserPlus className="w-5 h-5" />
             Profile
