@@ -73,6 +73,13 @@ async function disburseFinancing(requestId) {
         { status: 'Financed' }
       );
 
+      // Update PSP's currentlyUtilized amount (revolving credit tracking)
+      psp.currentlyUtilized = (psp.currentlyUtilized || 0) + request.amount;
+      await psp.save();
+
+      console.log(`[Disbursement Agent] Updated PSP currentlyUtilized: ${psp.currentlyUtilized} / ${psp.approvedAmount}`);
+      console.log(`[Disbursement Agent] Available credit: ${psp.approvedAmount - psp.currentlyUtilized}`);
+
       console.log(`[Disbursement Agent] ✓ DISBURSED successfully`);
 
     } catch (contractError) {

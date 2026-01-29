@@ -7,7 +7,7 @@ import CFOFinancingsTable from '../../../components/CFOFinancingsTable';
 
 const CFODashboard = () => {
   const { user, logout } = useAuth();
-  
+
   // State for backend data
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,7 +22,7 @@ const CFODashboard = () => {
   const [yieldData, setYieldData] = useState([]);
   const [financings, setFinancings] = useState([]);
   const [yieldAnalytics, setYieldAnalytics] = useState(null);
-  
+
 
   // Fetch dashboard data on mount
   useEffect(() => {
@@ -33,7 +33,7 @@ const CFODashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Fetch stats, yield history, and all financings
       const [statsResponse, yieldResponse, financingsResponse, analyticsResponse] = await Promise.all([
         cfoAPI.getDashboardStats(),
@@ -90,11 +90,15 @@ const CFODashboard = () => {
           </div>
           <span className="text-xs text-white/60 mt-1 block">CFO Admin</span>
         </div>
-        
+
         <nav className="p-4 space-y-2">
           <a href="/admin/cfo" className="sidebar-link active">
             <BarChart3 className="w-5 h-5" />
             Treasury Overview
+          </a>
+          <a href="/admin/cfo/repayments" className="sidebar-link">
+            <DollarSign className="w-5 h-5" />
+            Repayment Monitoring
           </a>
           <a href="/admin/cfo/exposure" className="sidebar-link">
             <PieChartIcon className="w-5 h-5" />
@@ -107,7 +111,7 @@ const CFODashboard = () => {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-          <button 
+          <button
             onClick={logout}
             className="sidebar-link w-full justify-start text-white/60 hover:text-white"
           >
@@ -201,38 +205,34 @@ const CFODashboard = () => {
                 </div>
 
                 {/* Collection Rate & Variance */}
-                <div className={`p-5 rounded-lg border ${
-                  yieldAnalytics.variance.status === 'over_target' ? 'bg-emerald-50 border-emerald-100' :
-                  yieldAnalytics.variance.status === 'under_target' ? 'bg-amber-50 border-amber-100' :
-                  'bg-gray-50 border-gray-100'
-                }`}>
+                <div className={`p-5 rounded-lg border ${yieldAnalytics.variance.status === 'over_target' ? 'bg-emerald-50 border-emerald-100' :
+                    yieldAnalytics.variance.status === 'under_target' ? 'bg-amber-50 border-amber-100' :
+                      'bg-gray-50 border-gray-100'
+                  }`}>
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className={`text-sm font-medium mb-1 ${
-                        yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-600' :
-                        yieldAnalytics.variance.status === 'under_target' ? 'text-amber-600' :
-                        'text-gray-600'
-                      }`}>Collection Rate</p>
+                      <p className={`text-sm font-medium mb-1 ${yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-600' :
+                          yieldAnalytics.variance.status === 'under_target' ? 'text-amber-600' :
+                            'text-gray-600'
+                        }`}>Collection Rate</p>
                       <p className="text-xs text-gray-500">Realized / Expected</p>
                     </div>
-                    <BarChart3 className={`w-5 h-5 ${
-                      yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-500' :
-                      yieldAnalytics.variance.status === 'under_target' ? 'text-amber-500' :
-                      'text-gray-500'
-                    }`} />
+                    <BarChart3 className={`w-5 h-5 ${yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-500' :
+                        yieldAnalytics.variance.status === 'under_target' ? 'text-amber-500' :
+                          'text-gray-500'
+                      }`} />
                   </div>
-                  <p className={`text-3xl font-bold mb-2 ${
-                    yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-700' :
-                    yieldAnalytics.variance.status === 'under_target' ? 'text-amber-700' :
-                    'text-gray-700'
-                  }`}>
+                  <p className={`text-3xl font-bold mb-2 ${yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-700' :
+                      yieldAnalytics.variance.status === 'under_target' ? 'text-amber-700' :
+                        'text-gray-700'
+                    }`}>
                     {yieldAnalytics.revenueRate.toFixed(1)}%
                   </p>
                   <div className="flex items-center gap-1 text-xs">
                     <span className={
                       yieldAnalytics.variance.status === 'over_target' ? 'text-emerald-600' :
-                      yieldAnalytics.variance.status === 'under_target' ? 'text-amber-600' :
-                      'text-gray-600'
+                        yieldAnalytics.variance.status === 'under_target' ? 'text-amber-600' :
+                          'text-gray-600'
                     }>
                       Variance: <span className="font-semibold">
                         {yieldAnalytics.variance.amount >= 0 ? '+' : ''}{formatCurrency(yieldAnalytics.variance.amount)}
@@ -278,12 +278,12 @@ const CFODashboard = () => {
                 <AreaChart data={yieldData}>
                   <defs>
                     <linearGradient id="colorUtilized" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="colorUnutilized" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -337,8 +337,8 @@ const CFODashboard = () => {
                   <div className="text-right">
                     <p className="text-sm text-white/80">Annualized Return</p>
                     <p className="text-xl font-bold">
-                      {stats.totalApprovedCredit > 0 
-                        ? ((stats.totalInterestRevenue * 12 / stats.totalApprovedCredit) * 100).toFixed(2) 
+                      {stats.totalApprovedCredit > 0
+                        ? ((stats.totalInterestRevenue * 12 / stats.totalApprovedCredit) * 100).toFixed(2)
                         : '0.00'}%
                     </p>
                   </div>

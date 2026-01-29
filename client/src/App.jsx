@@ -13,6 +13,7 @@ import ApplicationReview from './pages/admin/cro/ApplicationReview';
 import CFODashboard from './pages/admin/cfo/Dashboard';
 import ExposureAnalysis from './pages/admin/cfo/ExposureAnalysis';
 import YieldReports from './pages/admin/cfo/YieldReports';
+import RepaymentMonitoring from './pages/admin/cfo/RepaymentMonitoring';
 import './App.css';
 
 function App() {
@@ -24,88 +25,96 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/psp/apply-limit" element={<ApplyFinancingLimit />} />
-          
+
           {/* PSP Routes */}
-          <Route 
-            path="/psp/dashboard" 
+          <Route
+            path="/psp/dashboard"
             element={
               <ProtectedRoute allowedRoles={['PSP']}>
                 <PSPDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/psp/order-book" 
+          <Route
+            path="/psp/order-book"
             element={
               <ProtectedRoute allowedRoles={['PSP']}>
                 <OrderBook />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/psp/wallet" 
+          <Route
+            path="/psp/wallet"
             element={
               <ProtectedRoute allowedRoles={['PSP']}>
                 <Wallet />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/psp/onboarding" 
+          <Route
+            path="/psp/onboarding"
             element={
               <ProtectedRoute allowedRoles={['PSP']}>
                 <Onboarding />
               </ProtectedRoute>
-            } 
+            }
           />
-          
+
           {/* CRO Admin Routes */}
-          <Route 
-            path="/admin/cro" 
+          <Route
+            path="/admin/cro"
             element={
               <ProtectedRoute allowedRoles={['CRO']}>
                 <CRODashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/cro/application/:id" 
+          <Route
+            path="/admin/cro/application/:id"
             element={
               <ProtectedRoute allowedRoles={['CRO']}>
                 <ApplicationReview />
               </ProtectedRoute>
-            } 
+            }
           />
-          
+
           {/* CFO Admin Routes */}
-          <Route 
-            path="/admin/cfo" 
+          <Route
+            path="/admin/cfo"
             element={
               <ProtectedRoute allowedRoles={['CFO']}>
                 <CFODashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/cfo/exposure" 
+          <Route
+            path="/admin/cfo/exposure"
             element={
               <ProtectedRoute allowedRoles={['CFO']}>
                 <ExposureAnalysis />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/admin/cfo/yields" 
+          <Route
+            path="/admin/cfo/yields"
             element={
               <ProtectedRoute allowedRoles={['CFO']}>
                 <YieldReports />
               </ProtectedRoute>
-            } 
+            }
           />
-          
+          <Route
+            path="/admin/cfo/repayments"
+            element={
+              <ProtectedRoute allowedRoles={['CFO']}>
+                <RepaymentMonitoring />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Default redirect to login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
-          
+
           {/* Catch all - redirect to login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

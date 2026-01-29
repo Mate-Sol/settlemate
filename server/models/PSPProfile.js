@@ -46,17 +46,25 @@ const pspProfileSchema = new mongoose.Schema({
     uploadedAt: { type: Date, default: Date.now }
   }],
   
-  // Credit Line Status
+  // Approved credit line details
+  approvedAmount: {
+    type: Number,
+    default: 0
+  },
+  currentlyUtilized: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   creditLineStatus: {
     type: String,
-    enum: ['None', 'Pending', 'UnderReview', 'Approved', 'Rejected'],
-    default: 'None'
+    enum: ['Pending', 'Approved', 'Rejected', 'Active', 'Suspended'],
+    default: 'Pending'
   },
   requestedAmount: Number,
   requestedDuration: Number,
   
   // Approved Credit Line
-  approvedAmount: Number,
   approvedDuration: Number,
   utilizedBips: Number,
   unutilizedBips: Number,
