@@ -159,7 +159,7 @@ const OrderBookTable = ({ orders, selectedOrders, onSelectionChange }) => {
             {selectedOrders.length} order(s) selected
           </span>
           <span className="text-sm font-semibold text-brand-purple">
-            Total: {formatCurrency(orders.filter(o => selectedOrders.includes(o.id)).reduce((sum, o) => sum + o.amount, 0))}
+            Total: {formatCurrency(orders.filter(o => selectedOrders.includes(o._id)).reduce((sum, o) => sum + o.amount, 0))}
           </span>
         </div>
       )}
