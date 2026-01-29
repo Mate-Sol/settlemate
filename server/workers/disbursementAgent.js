@@ -26,7 +26,7 @@ async function disburseFinancing(requestId) {
     const psp = request.pspId;
 
     // Ensure PSP has deployed contract and wallet address
-    if (!psp.contractAddress || !psp.walletAddress) {
+    if (!psp.assignedPoolAddress) {
       await FinancingRequest.findByIdAndUpdate(requestId, {
         status: 'Failed',
         failureReason: 'PSP does not have deployed contract or wallet address'
@@ -44,7 +44,7 @@ async function disburseFinancing(requestId) {
     try {
       // Call the smart contract service to execute drawdown
       const receipt = await contractService.drawdownFunds(
-        psp.contractAddress,
+        psp.assignedPoolAddress,
         request.amount,
         psp.walletAddress
       );

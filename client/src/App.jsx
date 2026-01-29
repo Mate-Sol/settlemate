@@ -11,6 +11,8 @@ import Onboarding from './pages/psp/Onboarding';
 import CRODashboard from './pages/admin/cro/Dashboard';
 import ApplicationReview from './pages/admin/cro/ApplicationReview';
 import CFODashboard from './pages/admin/cfo/Dashboard';
+import ExposureAnalysis from './pages/admin/cfo/ExposureAnalysis';
+import YieldReports from './pages/admin/cfo/YieldReports';
 import './App.css';
 
 function App() {
@@ -81,6 +83,22 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CFO']}>
                 <CFODashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/cfo/exposure" 
+            element={
+              <ProtectedRoute allowedRoles={['CFO']}>
+                <ExposureAnalysis />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/cfo/yields" 
+            element={
+              <ProtectedRoute allowedRoles={['CFO']}>
+                <YieldReports />
               </ProtectedRoute>
             } 
           />

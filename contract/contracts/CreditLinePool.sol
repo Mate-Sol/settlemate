@@ -13,8 +13,8 @@ contract CreditLinePool {
     using SafeERC20 for IERC20;
 
     // State variables
-    address public admin;           // Admin (CRO) who deployed the contract
-    address public psp;              // PSP (borrower) assigned to this pool
+    address public admin;           // Admin (CRO) who deployed and manages the pool
+    address public pspWallet;        // PSP wallet address (recipient of funds)
     IERC20 public usdDF;             // USD-DF stablecoin token
     uint256 public creditLimit;      // Total approved credit limit
     uint256 public utilizedAmount;   // Currently utilized (borrowed) amount
@@ -26,20 +26,15 @@ contract CreditLinePool {
     bool public isActive;            // Contract status
     
     // Events
-    event Drawdown(address indexed psp, uint256 amount, uint256 timestamp, string referenceId);
-    event Repayment(address indexed psp, uint256 principal, uint256 interest, uint256 timestamp);
-    event CreditLineActivated(address indexed psp, uint256 creditLimit, uint256 duration);
+    event Drawdown(address indexed pspWallet, uint256 amount, uint256 timestamp, string referenceId);
+    event Repayment(address indexed pspWallet, uint256 principal, uint256 interest, uint256 timestamp);
+    event CreditLineActivated(address indexed pspWallet, uint256 creditLimit, uint256 duration);
     event CreditLineClosed(uint256 timestamp);
     event FeesCollected(uint256 utilizedFees, uint256 unutilizedFees, uint256 timestamp);
 
     // Modifiers
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can call this function");
-        _;
-    }
-
-    modifier onlyPSP() {
-        require(msg.sender == psp, "Only PSP can call this function");
         _;
     }
 
@@ -51,8 +46,8 @@ contract CreditLinePool {
 
     /**
      * @dev Constructor to initialize the credit line pool
-     * @param _admin Address of the admin (CRO) who will manage this pool
-     * @param _psp Address of the PSP (borrower)
+     * @param _admin Address of the admin who will manage this pool (calls drawdown)
+     * @param _pspWallet Address of the PSP wallet (receives funds from drawdown)
      * @param _usdDFToken Address of the USD-DF stablecoin token
      * @param _creditLimit Total credit limit in wei (with token decimals)
      * @param _duration Duration in days
@@ -61,7 +56,7 @@ contract CreditLinePool {
      */
     constructor(
         address _admin,
-        address _psp,
+        address _pspWallet,
         address _usdDFToken,
         uint256 _creditLimit,
         uint256 _duration,
@@ -69,13 +64,13 @@ contract CreditLinePool {
         uint256 _unutilizedBips
     ) {
         require(_admin != address(0), "Invalid admin address");
-        require(_psp != address(0), "Invalid PSP address");
+        require(_pspWallet != address(0), "Invalid PSP wallet address");
         require(_usdDFToken != address(0), "Invalid token address");
         require(_creditLimit > 0, "Credit limit must be greater than 0");
         require(_duration > 0, "Duration must be greater than 0");
 
         admin = _admin;
-        psp = _psp;
+        pspWallet = _pspWallet;
         usdDF = IERC20(_usdDFToken);
         creditLimit = _creditLimit;
         duration = _duration;
@@ -86,17 +81,17 @@ contract CreditLinePool {
         isActive = true;
         utilizedAmount = 0;
 
-        emit CreditLineActivated(_psp, _creditLimit, _duration);
+        emit CreditLineActivated(_pspWallet, _creditLimit, _duration);
     }
 
     /**
-     * @dev PSP requests a drawdown (borrow funds)
-     * @param amount Amount to borrow (in USD-DF tokens with decimals)
+     * @dev Admin executes drawdown on behalf of PSP (sends funds to PSP wallet)
+     * @param amount Amount to draw (in USD-DF tokens with decimals)
      * @param referenceId Order book reference ID for validation
      */
     function drawdown(uint256 amount, string memory referenceId) 
         external 
-        onlyPSP 
+        onlyAdmin 
         isActiveCreditLine 
     {
         require(amount > 0, "Amount must be greater than 0");
@@ -108,29 +103,30 @@ contract CreditLinePool {
         
         utilizedAmount += amount;
         
-        // Transfer USD-DF tokens to PSP
-        usdDF.safeTransfer(psp, amount);
+        // Transfer USD-DF tokens to PSP wallet
+        usdDF.safeTransfer(pspWallet, amount);
         
-        emit Drawdown(psp, amount, block.timestamp, referenceId);
+        emit Drawdown(pspWallet, amount, block.timestamp, referenceId);
     }
 
     /**
-     * @dev PSP repays borrowed amount with interest
+     * @dev PSP repays borrowed amount with interest (called from PSP wallet)
      * @param principal Principal amount to repay
      */
-    function repay(uint256 principal) external onlyPSP {
+    function repay(uint256 principal) external {
+        require(msg.sender == pspWallet, "Only PSP wallet can repay");
         require(principal > 0, "Principal must be greater than 0");
         require(principal <= utilizedAmount, "Repayment exceeds utilized amount");
         
         uint256 interest = calculateInterest(principal);
         uint256 totalRepayment = principal + interest;
         
-        // Transfer USD-DF tokens from PSP to contract
-        usdDF.safeTransferFrom(psp, address(this), totalRepayment);
+        // Transfer USD-DF tokens from PSP wallet to contract
+        usdDF.safeTransferFrom(pspWallet, address(this), totalRepayment);
         
         utilizedAmount -= principal;
         
-        emit Repayment(psp, principal, interest, block.timestamp);
+        emit Repayment(pspWallet, principal, interest, block.timestamp);
     }
 
     /**
@@ -175,7 +171,7 @@ contract CreditLinePool {
 
     /**
      * @dev Get pool status information
-     * @return _psp PSP address
+     * @return _pspWallet PSP wallet address
      * @return _creditLimit Total credit limit
      * @return _utilizedAmount Currently utilized amount
      * @return _remainingCredit Remaining available credit
@@ -187,7 +183,7 @@ contract CreditLinePool {
         external 
         view 
         returns (
-            address _psp,
+            address _pspWallet,
             uint256 _creditLimit,
             uint256 _utilizedAmount,
             uint256 _remainingCredit,
@@ -202,7 +198,7 @@ contract CreditLinePool {
         }
 
         return (
-            psp,
+            pspWallet,
             creditLimit,
             utilizedAmount,
             creditLimit - utilizedAmount,

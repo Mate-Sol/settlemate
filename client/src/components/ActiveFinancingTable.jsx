@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, DollarSign, Calendar, TrendingUp, CheckCircle, XCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Clock, DollarSign, Calendar, TrendingUp, CheckCircle, XCircle, Loader2, RefreshCw, Hash, ExternalLink } from 'lucide-react';
 
 const ActiveFinancingTable = () => {
   const [financings, setFinancings] = useState([]);
@@ -25,14 +25,11 @@ const ActiveFinancingTable = () => {
     fetchFinancings();
     // Auto-refresh every 5 seconds for pending statuses
     const interval = setInterval(() => {
-      const hasPending = financings.some(f => f.status === 'Pending' || f.status === 'Validated');
-      if (hasPending) {
-        fetchFinancings();
-      }
+      fetchFinancings();
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [financings]);
+  }, []);
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -101,41 +98,129 @@ const ActiveFinancingTable = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Active Financings</h2>
+  <div className="space-y-4">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold text-gray-900">Active Financings</h2>
         <button 
           onClick={fetchFinancings}
-          className="btn-secondary text-sm flex items-center gap-2"
+          className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
         >
           <RefreshCw className="w-4 h-4" />
           Refresh
         </button>
       </div>
 
-      <div className="card overflow-hidden">
+      {/* Responsive Implementation:
+        1. Mobile View (Hidden on md screens)
+        2. Desktop View (Hidden on small screens)
+      */}
+
+      {/* --- MOBILE VIEW (CARDS) --- */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {financings.map((financing) => (
+          <div key={financing._id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 space-y-4">
+            
+            {/* Card Header: Ref & Status */}
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <span className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Order Ref</span>
+                <div className="font-mono text-sm font-medium text-gray-900 flex items-center gap-1">
+                  <Hash className="w-3 h-3 text-gray-400" />
+                  {financing?.orderReference}
+                </div>
+              </div>
+              {getStatusBadge(financing.status)}
+            </div>
+
+            {/* Main Value */}
+            <div>
+              <span className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Amount</span>
+              <div className="text-2xl font-bold text-gray-900">{formatCurrency(financing.amount)}</div>
+            </div>
+
+            {/* Grid for Details */}
+            <div className="grid grid-cols-2 gap-y-4 gap-x-2 border-t border-b border-gray-100 py-3">
+              <div>
+                <span className="text-xs text-gray-500 block mb-1">Date Issued</span>
+                <span className="text-sm">{formatDate(financing.disbursedAt || financing.createdAt)}</span>
+              </div>
+              
+              <div>
+                <span className="text-xs text-gray-500 block mb-1">Duration</span>
+                 {financing.status === 'Disbursed' ? (
+                  <span className="flex items-center gap-1 text-sm">
+                    <Calendar className="w-3 h-3 text-gray-400" />
+                    {financing.daysElapsed || 0} days
+                  </span>
+                ) : <span className="text-gray-400 text-sm">-</span>}
+              </div>
+
+              <div>
+                <span className="text-xs text-gray-500 block mb-1">Accrued Interest</span>
+                {financing.status === 'Disbursed' && financing.accruedInterest ? (
+                  <div className="flex items-center gap-1 text-green-600 font-medium text-sm">
+                    <TrendingUp className="w-3 h-3" />
+                    {formatCurrency(financing.accruedInterest.total)}
+                  </div>
+                ) : <span className="text-sm text-gray-400">-</span>}
+              </div>
+
+               <div>
+                <span className="text-xs text-gray-500 block mb-1">Utilization</span>
+                {financing.status === 'Disbursed' ? (
+                  <div className="text-sm">
+                    {financing.utilizedBips || 0} <span className="text-gray-400 text-xs">bps</span>
+                  </div>
+                ) : <span className="text-sm text-gray-400">-</span>}
+              </div>
+            </div>
+
+            {/* Footer: Transaction Link */}
+            {financing.txHash && (
+               <a
+                href={`https://sepolia.etherscan.io/tx/${financing.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between w-full p-2 bg-gray-50 hover:bg-gray-100 rounded text-sm text-indigo-600 transition-colors"
+              >
+                <span className="font-mono text-xs">{financing.txHash.substring(0, 16)}...</span>
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+            {financing.rejectionReason && (
+               <div className="p-2 bg-red-50 text-red-700 text-sm rounded">
+                 {financing.rejectionReason}
+               </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* --- DESKTOP VIEW (TABLE) --- */}
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="data-table">
-            <thead>
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider font-semibold border-b border-gray-200">
               <tr>
-                <th>Order Reference</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Date Issued</th>
-                <th>Days Elapsed</th>
-                <th>Interest (BIPS)</th>
-                <th>Accrued Interest</th>
-                <th className="text-right">Transaction</th>
+                <th className="px-6 py-4 whitespace-nowrap">Order Reference</th>
+                <th className="px-6 py-4 whitespace-nowrap">Amount</th>
+                <th className="px-6 py-4 whitespace-nowrap">Status</th>
+                <th className="px-6 py-4 whitespace-nowrap">Date Issued</th>
+                <th className="px-6 py-4 whitespace-nowrap">Days Elapsed</th>
+                <th className="px-6 py-4 whitespace-nowrap">Interest (BIPS)</th>
+                <th className="px-6 py-4 whitespace-nowrap">Accrued Interest</th>
+                <th className="px-6 py-4 whitespace-nowrap text-right">Transaction</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-200 text-sm text-gray-700">
               {financings.map((financing) => (
-                <tr key={financing._id}>
-                  <td className="font-mono text-sm">{financing.orderBookReferenceIds[0]}</td>
-                  <td className="font-semibold">{formatCurrency(financing.amount)}</td>
-                  <td>{getStatusBadge(financing.status)}</td>
-                  <td>{formatDate(financing.disbursedAt || financing.createdAt)}</td>
-                  <td>
+                <tr key={financing._id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-mono">{financing?.orderReference}</td>
+                  <td className="px-6 py-4 font-semibold">{formatCurrency(financing.amount)}</td>
+                  <td className="px-6 py-4">{getStatusBadge(financing.status)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{formatDate(financing.disbursedAt || financing.createdAt)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {financing.status === 'Disbursed' ? (
                       <span className="flex items-center gap-1">
                         <Calendar className="w-4 h-4 text-gray-400" />
@@ -145,40 +230,43 @@ const ActiveFinancingTable = () => {
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
-                  <td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {financing.status === 'Disbursed' ? (
-                      <div className="text-sm">
-                        <div>Utilized: {financing.utilizedBips || 0} bps</div>
-                        <div className="text-gray-500">Unutilized: {financing.unutilizedBips || 0} bps</div>
+                      <div>
+                        <div><span className="font-medium">{financing.utilizedBips || 0}</span> <span className="text-xs text-gray-500">used</span></div>
+                        <div className="text-xs text-gray-400">{financing.unutilizedBips || 0} unused</div>
                       </div>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
-                  <td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {financing.status === 'Disbursed' && financing.accruedInterest ? (
                       <div className="flex items-center gap-1 text-green-600 font-medium">
                         <TrendingUp className="w-4 h-4" />
                         {formatCurrency(financing.accruedInterest.total)}
                       </div>
                     ) : financing.status === 'Rejected' || financing.status === 'Failed' ? (
-                      <span className="text-red-600 text-sm">{financing.rejectionReason || financing.failureReason}</span>
+                      <span className="text-red-600 text-xs max-w-[150px] truncate block" title={financing.rejectionReason}>
+                        {financing.rejectionReason || financing.failureReason}
+                      </span>
                     ) : (
-                      <span className="text-gray-400">Processing...</span>
+                      <span className="text-gray-400 italic text-xs">Processing...</span>
                     )}
                   </td>
-                  <td className="text-right">
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
                     {financing.txHash ? (
                       <a
                         href={`https://sepolia.etherscan.io/tx/${financing.txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-brand-purple hover:underline text-sm font-mono"
+                        className="text-indigo-600 hover:text-indigo-800 hover:underline font-mono inline-flex items-center gap-1"
                       >
-                        {financing.txHash.substring(0, 8)}...
+                        {financing.txHash.substring(0, 6)}...
+                        <ExternalLink className="w-3 h-3" />
                       </a>
                     ) : (
-                      <span className="text-gray-400 text-sm">-</span>
+                      <span className="text-gray-400">-</span>
                     )}
                   </td>
                 </tr>

@@ -3,6 +3,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { CreditCard, BarChart3, PieChart as PieChartIcon, TrendingUp, LogOut, DollarSign, Loader2 } from 'lucide-react';
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { cfoAPI } from '../../../services/api';
+import CFOFinancingsTable from '../../../components/CFOFinancingsTable';
 
 const CFODashboard = () => {
   const { user, logout } = useAuth();
@@ -141,6 +142,12 @@ const CFODashboard = () => {
               <span className="stats-label">Interest Revenue (YTD)</span>
               <span className="stats-value">{formatCurrency(stats.totalInterestRevenue)}</span>
             </div>
+          </div>
+
+          {/* Active Financings Section */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Active Financings (All PSPs)</h2>
+            <CFOFinancingsTable financings={financings} />
           </div>
 
           {/* Charts Row */}

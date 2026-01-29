@@ -182,11 +182,11 @@ class ContractService {
 
   /**
    * Execute drawdown from creditline pool
-   * PSP wallet must have already been funded with gas
+   * Admin calls this function, funds go to pspWallet stored in contract
    */
   async drawdownFunds(poolAddress, amount, referenceId = 'ORDER-' + Date.now()) {
     try {
-      // Use admin wallet to execute drawdown (in production, PSP would do this)
+      // Admin wallet executes drawdown (consistent operator)
       const pool = new ethers.Contract(poolAddress, this.creditLinePoolABI, this.adminWallet);
       const amountWei = ethers.parseUnits(amount.toString(), 6);
 
