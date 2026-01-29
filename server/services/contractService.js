@@ -228,6 +228,60 @@ class ContractService {
       console.error('Event monitoring error:', error);
     }
   }
+
+  /**
+   * PSP repays principal + interest on a credit line pool
+   * @param {string} poolAddress - Address of the CreditLinePool contract
+   * @param {number} principalAmount - Principal amount to repay (in USD-DF)
+   * @param {number} interestAmount - Interest amount to pay (in USD-DF)
+   * @returns {object} Transaction result
+   */
+  async repay(poolAddress, principalAmount, interestAmount) {
+    try {
+      console.log('Initiating repayment on pool:', poolAddress);
+      console.log('Principal:', principalAmount, 'Interest:', interestAmount);
+
+      // Convert amounts to wei (6 decimals for USD-DF)
+      const principalWei = ethers.parseUnits(principalAmount.toString(), 6);
+      const interestWei = ethers.parseUnits(interestAmount.toString(), 6);
+      
+      // Get pool contract instance with admin wallet
+      const pool = new ethers.Contract(poolAddress, this.creditLinePoolABI, this.adminWallet);
+
+      // First, approve the pool to spend USD-DF tokens (principal + interest)
+      const totalAmount = principalWei + interestWei;
+      const usddf = new ethers.Contract(this.usddfTokenAddress, this.usddfTokenABI, this.adminWallet);
+      
+      console.log('Approving USD-DF transfer...');
+      const approveTx = await usddf.approve(poolAddress, totalAmount);
+      await approveTx.wait();
+      console.log('Approval confirmed');
+
+      // Call repay function on the pool
+      console.log('Calling repay function...');
+      const tx = await pool.repay(principalWei, interestWei);
+      
+      console.log('Waiting for repayment transaction confirmation...');
+      const receipt = await tx.wait();
+
+      console.log(`Repayment successful! Tx Hash: ${tx.hash}`);
+
+      return {
+        success: true,
+        transactionHash: tx.hash,
+        blockNumber: receipt.blockNumber,
+        principalAmount,
+        interestAmount,
+        totalRepayment: principalAmount + interestAmount
+      };
+    } catch (error) {
+      console.error('Contract repayment error:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
 }
 
 module.exports = new ContractService();

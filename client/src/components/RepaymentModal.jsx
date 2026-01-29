@@ -2,6 +2,513 @@ import { useEffect, useState } from 'react';
 import { X, DollarSign, Calendar, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { pspAPI } from '../services/api';
 
+const poolABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_admin",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_pspWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_usdDFToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_creditLimit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_duration",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_utilizedBips",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_unutilizedBips",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "pspWallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "creditLimit",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "duration",
+        "type": "uint256"
+      }
+    ],
+    "name": "CreditLineActivated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "CreditLineClosed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "pspWallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "referenceId",
+        "type": "string"
+      }
+    ],
+    "name": "Drawdown",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "utilizedFees",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "unutilizedFees",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "FeesCollected",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "pspWallet",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "principal",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "actualInterest",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "expectedInterest",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "Repayment",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "calculateInterest",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "calculateUnutilizedFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "closeCreditLine",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "collectFees",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "creditLimit",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "deploymentTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "referenceId",
+        "type": "string"
+      }
+    ],
+    "name": "drawdown",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "duration",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "expiryTime",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "fundPool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getPoolStatus",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "_pspWallet",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_creditLimit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_utilizedAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_remainingCredit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_isActive",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_daysRemaining",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_poolBalance",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getRemainingCredit",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTokenAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "isActive",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pauseCreditLine",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pspWallet",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "reactivateCreditLine",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "principal",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "interestAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "repay",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unutilizedBips",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "usdDF",
+    "outputs": [
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "utilizedAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "utilizedBips",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
 const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
   console.log(financing);
   const [loading, setLoading] = useState(false);
@@ -9,7 +516,7 @@ const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
   const [error, setError] = useState(null);
   const [step, setStep] = useState('quote'); // 'quote' | 'processing' | 'complete'
 
-  
+
 
   const loadQuote = async () => {
     try {
@@ -30,24 +537,183 @@ const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
       setError(null);
       setStep('processing');
 
-      // In a real implementation, PSP would call smart contract here
-      // For now, we'll simulate with backend processing
+      console.log('[Repayment Modal] Processing repayment for:', financing._id);
+      console.log('[Repayment Modal] Principal:', financing.amount);
+      console.log('[Repayment Modal] Expected Interest:', quote.expectedInterest);
+
+      // Check if MetaMask is available
+      if (!window.ethereum) {
+        throw new Error('MetaMask is not installed. Please install MetaMask to continue.');
+      }
+
+      const { ethers } = await import('ethers');
+
+      // Connect to MetaMask
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      // 2. Define Sepolia Chain ID (11155111 in hex is 0xaa36a7)
+      const SEPOLIA_CHAIN_ID = "0xaa36a7";
+
+      // 3. Check current network and switch if necessary
+      const network = await provider.getNetwork();
+      // ethers v6 returns chainId as a BigInt, so we compare strictly
+      if (network.chainId !== 11155111n) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: SEPOLIA_CHAIN_ID }],
+          });
+        } catch (switchError) {
+          // This error code 4902 indicates that the chain has not been added to MetaMask.
+          if (switchError.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [
+                  {
+                    chainId: SEPOLIA_CHAIN_ID,
+                    chainName: "Sepolia Test Network",
+                    nativeCurrency: {
+                      name: "Sepolia ETH",
+                      symbol: "SepoliaETH",
+                      decimals: 18,
+                    },
+                    rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"], // Or public RPCs like https://rpc.sepolia.org
+                    blockExplorerUrls: ["https://sepolia.etherscan.io"],
+                  },
+                ],
+              });
+            } catch (addError) {
+              console.error("Failed to add Sepolia network:", addError);
+              throw new Error("Could not add Sepolia network to wallet.");
+            }
+          } else {
+            console.error("Failed to switch to Sepolia:", switchError);
+            throw new Error("Please switch your wallet to the Sepolia network.");
+          }
+        }
+      }
+
+      console.log('[Repayment Modal] Connected wallet:', userAddress);
+
+      // Contract ABIs (minimal)
+      const usddfABI = [
+        "function allowance(address owner, address spender) view returns (uint256)",
+        "function approve(address spender, uint256 amount) returns (bool)",
+        "function decimals() view returns (uint8)",
+        "function balanceOf(address owner) view returns (uint256)"
+      ];
+
+
+
+      // Get contract addresses from quote
+      const poolAddress = quote.poolAddress;
+      const usddfAddress = import.meta.env.VITE_USDDF_TOKEN_ADDRESS || '0x...'; // You'll need to add this to .env
+
+
+
+      console.log('[Repayment Modal] Approving USD-DF spend...');
+
+      // Step 1: Approve USD-DF token
+      const usddf = new ethers.Contract(usddfAddress, usddfABI, signer);
+      // const approveTx = await usddf.approve(poolAddress, totalAmount);
+      // await approveTx.wait();
+
+
+
+
+
+      // Step 2: Call repay on pool
+      const poolContract = new ethers.Contract(poolAddress, poolABI, signer);
+      // 2. DEBUG: Verify Wallet & Debt
+      const registeredWallet = await poolContract.pspWallet();
+      const currentDebt = await poolContract.utilizedAmount();
+
+      console.log("Registered Wallet:", registeredWallet, userAddress);
+
+      if (registeredWallet.toLowerCase() !== userAddress.toLowerCase()) {
+        alert(`WRONG WALLET! Contract expects: ${registeredWallet}`);
+        return;
+      }
+      // 3. Format Numbers (Handling Decimals)
+      const decimals = await usddf.decimals();
+
+      // Convert Principal (e.g. 10000) -> BigInt
+      const _principalWei = ethers.parseUnits(quote.principal.toString(), decimals);
+
+      // Convert Interest (e.g. 0.15) -> BigInt
+      // Note: Ensure interestAmount matches the format your backend provided
+      const _interestWei = ethers.parseUnits(quote.expectedInterest.toString(), decimals);
+
+      // Calculate TOTAL needed for approval
+      const totalRepaymentWei = _principalWei + _interestWei + 9000000;
+
+      console.log(`Principal: ${_principalWei}`);
+      console.log(`Interest: ${_interestWei}`);
+      console.log(`Total Needed: ${totalRepaymentWei}`);
+      console.log(`Total currentDebt: ${currentDebt}`);
+
+      const currentAllowance = await usddf.allowance(userAddress, poolAddress);
+      const pspWallet = await poolContract.pspWallet();
+      const allowance = await usddf.allowance(pspWallet, poolAddress);
+      const balance = await usddf.balanceOf(pspWallet);
+
+      console.log("PSP Wallet:", pspWallet);
+      console.log("Allowance (psp → pool):", allowance.toString());
+      console.log("Balance (psp):", balance.toString());
+      console.log("Total Needed:", totalRepaymentWei.toString());
+
+      if (currentAllowance < totalRepaymentWei) {
+        console.log("Insufficient allowance. Approving...");
+        const approveTx = await usddf.approve(poolAddress, totalRepaymentWei);
+        await approveTx.wait();
+        console.log("Approval confirmed:", approveTx.hash);
+        const _currentAllowance = await usddf.allowance(userAddress, poolAddress);
+        console.log("Current allowance:", _currentAllowance);
+
+      }
+      const repayTx = await poolContract.repay(_principalWei, _interestWei);
+      // return
+      console.log('[Repayment Modal] Waiting for repayment confirmation...');
+      const receipt = await repayTx.wait();
+
+      console.log('[Repayment Modal] Blockchain transaction successful:', repayTx.hash);
+
+      // Step 3: Send transaction hash to backend for record keeping
       const response = await pspAPI.processRepayment({
         requestId: financing._id,
         principalAmount: financing.amount,
         actualInterestPaid: quote.expectedInterest,
-        txHash: '0x' + Math.random().toString(16).substring(2, 66), // Mock tx hash
-        blockNumber: Math.floor(Math.random() * 1000000)
+        txHash: repayTx.hash,
+        blockNumber: receipt.blockNumber
       });
 
+      console.log('[Repayment Modal] Backend updated:', response.data);
+
       setStep('complete');
-      
+
       setTimeout(() => {
         onRepaymentSuccess(response.data);
         handleClose();
       }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to process repayment');
+      console.error('[Repayment Modal] Error:', err);
+      let errorMessage = 'Failed to process repayment';
+
+      if (err.code === 'ACTION_REJECTED') {
+        errorMessage = 'Transaction rejected by user';
+      } else if (err.message?.includes('MetaMask')) {
+        errorMessage = err.message;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
       setStep('quote');
     } finally {
       setLoading(false);
@@ -84,7 +750,7 @@ const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold">Repay Financing</h2>
-          <button 
+          <button
             onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
             disabled={loading && step === 'processing'}
@@ -134,13 +800,14 @@ const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
               </div>
 
               {/* Info Box */}
-              <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6">
-                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-amber-800">
-                  <p className="font-medium mb-1">Important:</p>
+              <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg mb-6">
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Wallet Connection Required:</p>
                   <p className="text-xs">
-                    In production, you would connect your wallet and call the <code className="bg-amber-100 px-1 rounded">repay()</code> function 
-                    on the CreditLinePool contract. For demo purposes, clicking "Process Repayment" will simulate this transaction.
+                    Clicking "Process Repayment" will connect your MetaMask wallet and execute two transactions:
+                    <br />1. Approve USD-DF token spend
+                    <br />2. Call <code className="bg-blue-100 px-1 rounded">repay()</code> on your CreditLinePool
                   </p>
                 </div>
               </div>

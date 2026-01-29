@@ -269,7 +269,7 @@ router.get('/repayment-quote/:requestId', async (req, res) => {
 });
 
 // @route   POST /api/psp/process-repayment
-// @desc    Process a repayment (manual trigger or after blockchain confirmation)
+// @desc    Process a repayment record (after frontend calls smart contract)
 // @access  Private (PSP only)
 router.post('/process-repayment', async (req, res) => {
   try {
@@ -286,7 +286,13 @@ router.post('/process-repayment', async (req, res) => {
     if (!financing || financing.pspId.toString() !== profile._id.toString()) {
       return res.status(403).json({ message: 'Unauthorized access to this financing request' });
     }
-    
+
+    console.log('[PSP Repayment] Recording repayment from frontend transaction');
+    console.log('Transaction Hash:', txHash);
+    console.log('Principal:', principalAmount);
+    console.log('Interest:', actualInterestPaid);
+
+    // Process repayment in backend (update financing status, restore credit)
     const result = await processRepayment(requestId, {
       principalAmount,
       actualInterestPaid,
@@ -300,16 +306,17 @@ router.post('/process-repayment', async (req, res) => {
     }
     
     res.json({
-      message: 'Repayment processed successfully',
+      message: 'Repayment recorded successfully',
       financing: result.financing,
       repaymentRecord: result.repaymentRecord,
       creditRestored: result.creditRestored,
       variance: result.variance,
-      variancePercentage: result.variancePercentage
+      variancePercentage: result.variancePercentage,
+      txHash
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('[PSP Repayment] Error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
