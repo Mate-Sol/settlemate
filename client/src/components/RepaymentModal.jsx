@@ -649,7 +649,7 @@ const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
       const _interestWei = ethers.parseUnits(quote.expectedInterest.toString(), decimals);
 
       // Calculate TOTAL needed for approval
-      const totalRepaymentWei = _principalWei + _interestWei + 9000000;
+      const totalRepaymentWei = _principalWei + _interestWei + 9000000n;
 
       console.log(`Principal: ${_principalWei}`);
       console.log(`Interest: ${_interestWei}`);

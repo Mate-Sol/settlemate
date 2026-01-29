@@ -128,8 +128,9 @@ contract CreditLinePool {
         uint256 expectedInterest = calculateInterest(principal);
         uint256 totalRepayment = principal + interestAmount;
         
-        // Transfer USD-DF tokens from PSP wallet to contract
-        usdDF.safeTransferFrom(pspWallet, address(this), totalRepayment);
+        // Transfer USD-DF tokens from msg.sender (PSP wallet) to contract
+        // msg.sender is already validated to be pspWallet via require check above
+        usdDF.safeTransferFrom(msg.sender, address(this), totalRepayment);
         
         utilizedAmount -= principal;
         

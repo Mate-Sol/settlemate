@@ -37,7 +37,7 @@ async function disburseFinancing(requestId) {
 
     // Call smart contract drawdown function
     console.log(`[Disbursement Agent] Calling contract drawdown...`);
-    console.log(`  Contract: ${psp.contractAddress}`);
+    console.log(`  Contract: ${psp.poolAddress}`);
     console.log(`  Amount: $${request.amount}`);
     console.log(`  Recipient: ${psp.walletAddress}`);
 
