@@ -649,7 +649,7 @@ const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
       const _interestWei = ethers.parseUnits(quote.expectedInterest.toString(), decimals);
 
       // Calculate TOTAL needed for approval
-      const totalRepaymentWei = _principalWei + _interestWei + 9000000n;
+      const totalRepaymentWei = _principalWei + _interestWei;
 
       console.log(`Principal: ${_principalWei}`);
       console.log(`Interest: ${_interestWei}`);
@@ -779,7 +779,7 @@ const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
                 {/* Interest Details */}
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                   <div>
-                    <span className="text-sm text-gray-600 block">Accrued Interest</span>
+                    <span className="text-sm text-gray-600 block">Loan Interest (Utilized)</span>
                     <span className="text-xs text-gray-500">
                       {quote.daysElapsed} days @ {quote.utilizedBips} bps/day
                     </span>
@@ -789,11 +789,24 @@ const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
                   </span>
                 </div>
 
+                {/* Note about Maintenance Fees */}
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-amber-800 font-medium">Credit Line Maintenance Fees</p>
+                      <p className="text-xs text-amber-700 mt-1">
+                        Maintenance fees are billed separately on a weekly basis. Check the "Credit Line Maintenance" section on your dashboard.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Total Due */}
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-brand-purple to-brand-magenta rounded-lg text-white">
                   <div>
                     <span className="text-sm text-white/80 block">Total Due</span>
-                    <span className="text-xs text-white/60">Principal + Interest</span>
+                    <span className="text-xs text-white/60">Principal + Loan Interest</span>
                   </div>
                   <span className="text-2xl font-bold">{formatCurrency(quote.totalDue)}</span>
                 </div>

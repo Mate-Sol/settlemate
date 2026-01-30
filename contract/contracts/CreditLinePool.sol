@@ -37,6 +37,7 @@ contract CreditLinePool {
     event CreditLineActivated(address indexed pspWallet, uint256 creditLimit, uint256 duration);
     event CreditLineClosed(uint256 timestamp);
     event FeesCollected(uint256 utilizedFees, uint256 unutilizedFees, uint256 timestamp);
+    event MaintenanceFeePaid(address indexed pspWallet, uint256 amount, uint256 timestamp);
 
     // Modifiers
     modifier onlyAdmin() {
@@ -238,6 +239,22 @@ contract CreditLinePool {
             usdDF.safeTransfer(admin, unutilizedFee);
             emit FeesCollected(0, unutilizedFee, block.timestamp);
         }
+    }
+
+    /**
+     * @dev PSP pays credit line maintenance fee (called separately from loan repayment)
+     * @param maintenanceFeeAmount Amount of maintenance fee to pay
+     * NOTE: This is for periodic (weekly/monthly) credit line maintenance charges
+     * This is separate from loan interest which is paid via repay() function
+     */
+    function payMaintenanceFee(uint256 maintenanceFeeAmount) external {
+        require(msg.sender == pspWallet, "Only PSP wallet can pay maintenance fee");
+        require(maintenanceFeeAmount > 0, "Fee amount must be greater than 0");
+        
+        // Transfer USD-DF tokens from PSP wallet to contract
+        usdDF.safeTransferFrom(msg.sender, address(this), maintenanceFeeAmount);
+        
+        emit MaintenanceFeePaid(pspWallet, maintenanceFeeAmount, block.timestamp);
     }
 
     /**

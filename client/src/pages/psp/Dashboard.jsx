@@ -7,6 +7,7 @@ import ActiveFinancingTable from '../../components/ActiveFinancingTable';
 import RequestFinancingModal from '../../components/RequestFinancingModal';
 import RepayModal from '../../components/RepayModal';
 import CreditLineExpiryBanner from '../../components/CreditLineExpiryBanner';
+import MaintenanceFeeWidget from '../../components/MaintenanceFeeWidget';
 import { pspAPI } from '../../services/api';
 
 const PSPDashboard = () => {
@@ -233,6 +234,11 @@ const PSPDashboard = () => {
               usedAmount={financialData.usedAmount}
               availableAmount={financialData.availableAmount}
             />
+          </div>
+
+          {/* Maintenance Fee Widget */}
+          <div className="mb-8">
+            <MaintenanceFeeWidget />
           </div>
 
           {/* Active Financings Section */}

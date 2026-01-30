@@ -9,6 +9,9 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
+// Initialize scheduled jobs (credit maintenance)
+const { initializeScheduledJobs } = require('./config/scheduler');
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -17,6 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/psp', require('./routes/psp'));
+app.use('/api/psp/maintenance', require('./routes/maintenance'));
 app.use('/api/cro', require('./routes/cro'));
 app.use('/api/cfo', require('./routes/cfo'));
 app.use('/api/external-psp', require('./routes/externalPsp'));
@@ -47,5 +51,7 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+initializeScheduledJobs();
+
 
 module.exports = app;

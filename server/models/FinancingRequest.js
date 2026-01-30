@@ -75,20 +75,19 @@ financingRequestSchema.virtual('daysElapsed').get(function() {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
-// Virtual: Accrued interest calculation
+// Virtual: Accrued interest calculation (ONLY utilized interest)
+// NOTE: Unutilized fees are now calculated separately at PSP level as "Credit Maintenance Charges"
 financingRequestSchema.virtual('accruedInterest').get(function() {
-  if (!this.disbursedAt || !this.utilizedBips || !this.unutilizedBips) {
-    return { utilized: 0, unutilized: 0, total: 0, days: 0 };
+  if (!this.disbursedAt || !this.utilizedBips) {
+    return { utilized: 0, total: 0, days: 0 };
   }
   
   const days = this.daysElapsed;
   const utilized = (this.amount * this.utilizedBips * days) / (10000 * 365);
-  const unutilized = ((this.approvedAmount - this.amount) * this.unutilizedBips * days) / (10000 * 365);
   
   return {
     utilized: Math.round(utilized * 100) / 100,
-    unutilized: Math.round(unutilized * 100) / 100,
-    total: Math.round((utilized + unutilized) * 100) / 100,
+    total: Math.round(utilized * 100) / 100, // Total is same as utilized now
     days
   };
 });

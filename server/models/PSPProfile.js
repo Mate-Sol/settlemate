@@ -73,6 +73,24 @@ const pspProfileSchema = new mongoose.Schema({
   walletAddress: String,
   assignedPoolAddress: String,  // Deployed CreditLinePool contract address
   
+  // Credit Maintenance Charges (Weekly)
+  lastMaintenanceChargeDate: {
+    type: Date,
+    default: null
+  },
+  maintenanceChargeFrequency: {
+    type: String,
+    enum: ['weekly', 'monthly'],
+    default: 'weekly'
+  },
+  accumulatedMaintenanceFee: {
+    type: Number,
+    default: 0
+  },
+  nextMaintenanceDueDate: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
