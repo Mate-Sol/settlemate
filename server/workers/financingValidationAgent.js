@@ -24,6 +24,7 @@ async function validateFinancingRequest(requestId) {
     }
 
     const psp = request.pspId;
+    console.log(`[Validation Agent] Validating request for PSP: ${psp}`);
 
     // Validation checks
     const validationResults = {

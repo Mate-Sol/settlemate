@@ -242,7 +242,7 @@ const PSPDashboard = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-4 mb-8">
-            <button
+            {/* <button
               onClick={() => setShowFinancingModal(true)}
               disabled={selectedOrders.length === 0}
               className="btn-brand flex items-center gap-2"
@@ -254,7 +254,7 @@ const PSPDashboard = () => {
                   {selectedOrders.length}
                 </span>
               )}
-            </button>
+            </button> */}
             {/* <button 
               onClick={() => setShowRepayModal(true)}
               disabled={financialData.usedAmount === 0}
@@ -266,11 +266,11 @@ const PSPDashboard = () => {
           </div>
 
           {/* Order Book Table */}
-          <OrderBookTable
+          {/* <OrderBookTable
             orders={orders}
             selectedOrders={selectedOrders}
             onSelectionChange={setSelectedOrders}
-          />
+          /> */}
         </div>
       </main>
 

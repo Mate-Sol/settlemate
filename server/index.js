@@ -19,6 +19,8 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/psp', require('./routes/psp'));
 app.use('/api/cro', require('./routes/cro'));
 app.use('/api/cfo', require('./routes/cfo'));
+app.use('/api/external-psp', require('./routes/externalPsp'));
+app.use('/api/webhook', require('./routes/webhook'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

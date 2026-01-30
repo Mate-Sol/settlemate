@@ -42,6 +42,16 @@ const financingRequestSchema = new mongoose.Schema({
   txHash: String,
   contractAddress: String,
   
+  // External PSP tracking
+  isExternalPSP: {
+    type: Boolean,
+    default: false
+  },
+  externalOrderId: {
+    type: String,
+    default: null
+  },
+  
   // Error handling
   rejectionReason: String,
   failureReason: String
