@@ -51,6 +51,14 @@ const financingRequestSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  externalPspApiKey: {
+    type: String,
+    default: null
+  },
+  externalPspApiSecret: {
+    type: String,
+    default: null
+  },
   
   // Error handling
   rejectionReason: String,

@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const ExternalPSPUser = require('../models/ExternalPSPUser');
-const ExternalOrderBook = require('../models/ExternalOrderBook');
 const OrderBook = require('../models/OrderBook');
 const PSPProfile = require('../models/PSPProfile');
 const FinancingRequest = require('../models/FinancingRequest');
@@ -166,7 +165,9 @@ router.post('/loan-request', async (req, res) => {
       orderReference: orderReference,
       status: 'Pending',
       isExternalPSP: true, // Flag to identify external PSP requests
-      externalOrderId: orderId
+      externalOrderId: orderId,
+      externalPspApiKey: externalPspUser.apiKey,
+      externalPspApiSecret: externalPspUser.apiSecret
     });
 
     await financingRequest.save();
@@ -177,13 +178,8 @@ router.post('/loan-request', async (req, res) => {
       console.error('[Webhook] Async validation error:', err);
     });
 
-    // Step 7: Update external order book status
-    const externalOrder = await ExternalOrderBook.findById(orderId);
-    if (externalOrder) {
-      externalOrder.loanStatus = 'Pending';
-      externalOrder.credmateLoanRequestId = financingRequest._id.toString();
-      await externalOrder.save();
-    }
+    // Note: External PSP will be notified via webhook when loan is approved/disbursed
+    // See disbursementAgent.js for webhook notification logic
 
     console.log('[Webhook] Loan request processed successfully');
 
@@ -200,41 +196,6 @@ router.post('/loan-request', async (req, res) => {
       message: 'Server error processing loan request',
       error: error.message 
     });
-  }
-});
-
-// @route   POST /api/webhook/loan-status-update
-// @desc    Update loan status in external PSP (called by CredMate after disbursement)
-// @access  Internal
-router.post('/loan-status-update', async (req, res) => {
-  try {
-    const { externalOrderId, loanStatus, financingRequestId } = req.body;
-
-    if (!externalOrderId || !loanStatus) {
-      return res.status(400).json({ message: 'External order ID and loan status are required' });
-    }
-
-    const externalOrder = await ExternalOrderBook.findById(externalOrderId);
-    
-    if (!externalOrder) {
-      return res.status(404).json({ message: 'External order not found' });
-    }
-
-    externalOrder.loanStatus = loanStatus;
-    if (loanStatus === 'Disbursed') {
-      externalOrder.status = 'Financed';
-    }
-    await externalOrder.save();
-
-    console.log(`[Webhook] Updated external order ${externalOrderId} status to ${loanStatus}`);
-
-    res.json({
-      message: 'Loan status updated successfully',
-      order: externalOrder
-    });
-  } catch (error) {
-    console.error('[Webhook] Error updating loan status:', error);
-    res.status(500).json({ message: 'Server error' });
   }
 });
 

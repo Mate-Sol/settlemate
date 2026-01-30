@@ -382,4 +382,69 @@ router.get('/loan-status/:orderId', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   POST /api/external-psp/webhook/loan-approved
+// @desc    Webhook endpoint for CredMate to notify loan approval
+// @access  Public (verified by API key)
+router.post('/webhook/loan-approved', async (req, res) => {
+  try {
+    const apiKey = req.header('X-API-Key');
+    const apiSecret = req.header('X-API-Secret');
+    
+    if (!apiKey || !apiSecret) {
+      return res.status(401).json({ message: 'API credentials required' });
+    }
+
+    // Verify API credentials
+    const user = await ExternalPSPUser.findOne({ apiKey });
+    if (!user || !user.verifyApiSecret(apiSecret)) {
+      return res.status(403).json({ message: 'Invalid API credentials' });
+    }
+
+    const { 
+      orderId, 
+      credmateLoanId, 
+      status, 
+      approvedAmount,
+      message 
+    } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ message: 'Order ID is required' });
+    }
+
+    // Find and update the order
+    const order = await ExternalOrderBook.findOne({
+      _id: orderId,
+      externalPspUserId: user._id
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Update order status
+    order.loanStatus = status || 'Approved';
+    order.credmateLoanId = credmateLoanId;
+    order.approvedAt = new Date();
+    
+    if (approvedAmount) {
+      order.approvedAmount = approvedAmount;
+    }
+
+    await order.save();
+
+    console.log(`[External PSP Webhook] Order ${orderId} status updated to ${order.loanStatus}`);
+
+    res.json({
+      message: 'Webhook received and order updated',
+      orderId: order._id,
+      orderReference: order.orderReference,
+      loanStatus: order.loanStatus
+    });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(500).json({ message: 'Webhook processing error' });
+  }
+});
+
 module.exports = router;
