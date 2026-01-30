@@ -1,0 +1,9 @@
+module.exports = [
+  "0x07bFa2e2327b2b669347b6FD2aEb855eA9659b95",
+  "0xc6febB12613498287dc7B414ae59BCd455bfA24F",       // PSP_ADDRESS
+  "0xE2853C79cc6761eFFEAdF15f4199f843aa4B3E37",       // USDDF_TOKEN_ADDRESS
+  "1000000000000000000", // CREDIT_LIMIT
+  2592000,               // DURATION (30 days)
+  7000,                   // UTILIZED_BIPS
+  3000                    // UNUTILIZED_BIPS
+];

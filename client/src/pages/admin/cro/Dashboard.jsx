@@ -79,23 +79,20 @@ const CRODashboard = () => {
           </header>
 
           {/* Stats Cards */}
-          <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
             <div className="stats-card">
               <span className="stats-label">Pending Applications</span>
               <span className="stats-value text-status-warning">{stats?.pendingApplications}</span>
             </div>
             <div className="stats-card">
               <span className="stats-label">Active Credit Lines</span>
-              <span className="stats-value text-status-success">{stats?.activeCreditLines}</span>
+              <span className="stats-value text-status-success">{stats?.activeLines}</span>
             </div>
             <div className="stats-card">
-              <span className="stats-label">Total Exposure</span>
-              <span className="stats-value text-gradient">${stats?.totalExposure}</span>
+              <span className="stats-label">Rejected Applications</span>
+              <span className="stats-value text-gradient">{stats?.rejectedApplications}</span>
             </div>
-            <div className="stats-card">
-              <span className="stats-label">Overdue Accounts</span>
-              <span className="stats-value text-status-danger">{stats?.overdueAccounts}</span>
-            </div>
+           
           </div>
 
           {/* Pending Applications Table */}

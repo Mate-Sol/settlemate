@@ -29,12 +29,21 @@ async function main() {
   // Deploy contract
   const CreditLinePool = await hre.ethers.getContractFactory("CreditLinePool");
   const creditLinePool = await CreditLinePool.deploy(
+    "0x07bFa2e2327b2b669347b6FD2aEb855eA9659b95",
     PSP_ADDRESS,
     USDDF_TOKEN_ADDRESS,
     CREDIT_LIMIT,
     DURATION,
     UTILIZED_BIPS,
     UNUTILIZED_BIPS
+
+    //  address _admin,
+    //     address _pspWallet,
+    //     address _usdDFToken,
+    //     uint256 _creditLimit,
+    //     uint256 _duration,
+    //     uint256 _utilizedBips,
+    //     uint256 _unutilizedBips
   );
 
   await creditLinePool.waitForDeployment();
