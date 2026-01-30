@@ -159,7 +159,7 @@ router.get('/earned-yield-history', async (req, res) => {
   try {
     // Get all disbursed financings
     const financings = await FinancingRequest.find({ 
-      status: { $in: ['Disbursed', 'Repaid'] }
+      status: { $in: ['Repaid'] }
     })
     .populate('pspId', 'companyName creditLineDuration utilizedBips unutilizedBips approvedAmount')
     .sort({ disbursedAt: 1 });
