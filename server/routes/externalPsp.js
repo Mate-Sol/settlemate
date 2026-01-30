@@ -396,7 +396,7 @@ router.post('/webhook/loan-approved', async (req, res) => {
 
     // Verify API credentials
     const user = await ExternalPSPUser.findOne({ apiKey });
-    if (!user || !user.verifyApiSecret(apiSecret)) {
+    if (!user || !user.verifyApiCredentials(apiKey, apiSecret)) {
       return res.status(403).json({ message: 'Invalid API credentials' });
     }
 
