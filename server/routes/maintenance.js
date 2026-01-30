@@ -144,7 +144,7 @@ router.get('/summary', async (req, res) => {
     
     // Calculate daily maintenance fee
     const dailyFee = psp.unutilizedBips 
-      ? (availableCredit * psp.unutilizedBips) / (10000 * 365)
+      ? (availableCredit * psp.unutilizedBips) / 10000
       : 0;
     
     // Calculate projected weekly/monthly fees

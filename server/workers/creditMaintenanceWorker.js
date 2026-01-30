@@ -20,8 +20,8 @@ function calculateDailyMaintenanceFee(psp) {
     return 0;
   }
   
-  // Daily fee = (availableCredit × unutilizedBips) / (10000 × 365)
-  const dailyFee = (availableCredit * psp.unutilizedBips) / (10000 * 365);
+  // Daily fee = (availableCredit × unutilizedBips) / 10000
+  const dailyFee = (availableCredit * psp.unutilizedBips) / 10000;
   
   return Math.round(dailyFee * 100) / 100; // Round to 2 decimals
 }

@@ -201,11 +201,11 @@ router.get('/earned-yield-history', async (req, res) => {
       const daysHeld = Math.max(0, Math.ceil((endDate - disbursedDate) / (1000 * 60 * 60 * 24)));
       
       // Calculate utilized yield (on the amount disbursed)
-      const utilizedYield = (principal * utilizedBips * daysHeld) / (10000 * 365);
+      const utilizedYield = (principal * utilizedBips * daysHeld) / 10000;
       
       // Calculate unutilized yield (on unused credit)
       const unutilizedAmount = Math.max(0, creditLimit - principal);
-      const unutilizedYield = (unutilizedAmount * unutilizedBips * daysHeld) / (10000 * 365);
+      const unutilizedYield = (unutilizedAmount * unutilizedBips * daysHeld) / 10000;
 
       monthlyData[monthKey].utilizedYield += utilizedYield;
       monthlyData[monthKey].unutilizedYield += unutilizedYield;

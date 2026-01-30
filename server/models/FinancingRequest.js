@@ -83,7 +83,7 @@ financingRequestSchema.virtual('accruedInterest').get(function() {
   }
   
   const days = this.daysElapsed;
-  const utilized = (this.amount * this.utilizedBips * days) / (10000 * 365);
+  const utilized = (this.amount * this.utilizedBips * days) / 10000;
   
   return {
     utilized: Math.round(utilized * 100) / 100,

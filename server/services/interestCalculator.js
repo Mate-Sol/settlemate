@@ -28,12 +28,12 @@ function calculateInterest(financing) {
   const diffTime = Math.abs(now - financing.disbursedAt);
   const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  // Utilized interest: (drawdown amount × utilized BIPS × days) / (10000 × 365)
-  const utilizedInterest = (financing.amount * financing.utilizedBips * days) / (10000 * 365);
+  // Utilized interest: (drawdown amount × utilized BIPS × days) / 10000
+  const utilizedInterest = (financing.amount * financing.utilizedBips * days) / 10000;
 
-  // Unutilized interest: (unused credit × unutilized BIPS × days) / (10000 × 365)
+  // Unutilized interest: (unused credit × unutilized BIPS × days) / 10000
   const unusedCredit = financing.approvedAmount - financing.amount;
-  const unutilizedInterest = (unusedCredit * financing.unutilizedBips * days) / (10000 * 365);
+  const unutilizedInterest = (unusedCredit * financing.unutilizedBips * days) / 10000;
 
   return {
     utilized: Math.round(utilizedInterest * 100) / 100,
