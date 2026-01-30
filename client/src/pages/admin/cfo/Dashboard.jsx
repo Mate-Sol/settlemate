@@ -304,7 +304,7 @@ const CFODashboard = () => {
 
           {/* Yield Stats */}
           <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="card">
+            {/* <div className="card">
               <h2 className="text-xl font-semibold mb-4">Yield Generation</h2>
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
@@ -348,7 +348,7 @@ const CFODashboard = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             <div className="card">
               <h2 className="text-xl font-semibold mb-4">Pool Status</h2>
@@ -373,12 +373,13 @@ const CFODashboard = () => {
                 </div>
               </div>
             </div>
+              <EarnedYieldChart yieldData={yieldData} />
           </div>
 
           {/* Yield Stats */}
           <div className="grid md:grid-cols-1 gap-6 mb-8">
             {/* Earned Yield Chart */}
-            <EarnedYieldChart yieldData={yieldData} />
+          
 
 
           </div>
