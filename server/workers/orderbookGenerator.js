@@ -185,7 +185,7 @@ async function generateOrderbookEntry() {
     console.log('[Orderbook Generator] Generating new orderbook entry...');
     
     // Target specific user: psp@credmate.com (Acme)
-    const targetUserId = '69805c94b3a8287dc7280ebc';
+    const targetUserId = '698067e30704b78846b57b8b';
     
     // Get the specific user
     const user = await ExternalPSPUser.findById(targetUserId);
