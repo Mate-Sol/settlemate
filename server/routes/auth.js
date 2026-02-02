@@ -5,10 +5,13 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const PSPProfile = require('../models/PSPProfile');
+const mongoose = require('mongoose'); // Ensure mongoose is imported
+
 
 // @route   POST /api/auth/register
 // @desc    Register new PSP user
 // @access  Public
+
 router.post('/register',
   [
     body('email').isEmail().normalizeEmail(),
@@ -17,47 +20,38 @@ router.post('/register',
     body('companyName').notEmpty()
   ],
   async (req, res) => {
+    // 1. Start the session
+    const session = await mongoose.startSession();
+    
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
 
+      // 2. Start the transaction
+      session.startTransaction();
+
       const { 
-        email, 
-        password, 
-        name, 
-        companyName,
+        email, password, name, companyName,
         // Additional company info
-        registrationNo,
-        country,
-        yearEstablished,
-        contactName,
-        contactEmail,
-        contactPhone,
-        uboDetails,
-        pepExposure,
+        registrationNo, country, yearEstablished,
+        contactName, contactEmail, contactPhone,
+        uboDetails, pepExposure,
         // Business operations
-        sector,
-        transactionVolume,
-        keyProducts,
-        topCustomers,
-        topSuppliers,
+        sector, transactionVolume, keyProducts, topCustomers, topSuppliers,
         // Financial info
-        annualRevenue,
-        rolledOutCreditLines,
-        primaryBank,
-        currentAllocation,
-        walletAddress,
-        projectedRevenue,
-        profitMargin,
-        monthlyCashFlow,
-        defaultHistory
+        annualRevenue, rolledOutCreditLines, primaryBank, currentAllocation,
+        walletAddress, projectedRevenue, profitMargin, monthlyCashFlow, defaultHistory
       } = req.body;
 
       // Check if user exists
-      let user = await User.findOne({ email });
+      // Note: Passing session here ensures read consistency within the transaction
+      let user = await User.findOne({ email }).session(session);
+      
       if (user) {
+        // We must abort here because we are returning early
+        await session.abortTransaction(); 
         return res.status(400).json({ message: 'User already exists' });
       }
 
@@ -65,7 +59,7 @@ router.post('/register',
       const salt = await bcrypt.genSalt(10);
       const passwordHash = await bcrypt.hash(password, salt);
 
-      // Create user
+      // Create user instance
       user = new User({
         email,
         passwordHash,
@@ -73,9 +67,10 @@ router.post('/register',
         role: 'PSP'
       });
 
-      await user.save();
+      // 3. Save User with the session
+      await user.save({ session });
 
-      // Create PSP profile with all collected data
+      // Create PSP profile instance
       const pspProfile = new PSPProfile({
         userId: user._id,
         companyName,
@@ -106,9 +101,13 @@ router.post('/register',
         creditLineStatus: 'None'
       });
 
-      await pspProfile.save();
+      // 4. Save Profile with the session
+      await pspProfile.save({ session });
 
-      // Generate JWT
+      // 5. Commit the transaction (Make changes permanent)
+      await session.commitTransaction();
+
+      // Generate JWT (Operations outside DB don't need the session)
       const token = jwt.sign(
         { userId: user._id, role: user.role },
         process.env.JWT_SECRET,
@@ -124,9 +123,18 @@ router.post('/register',
           role: user.role
         }
       });
+
     } catch (error) {
-      console.error(error);
+      // 6. Abort transaction on error (Revert changes)
+      // This undoes user.save() if pspProfile.save() failed
+      await session.abortTransaction();
+      
+      console.error("Transaction Aborted:", error);
       res.status(500).json({ message: 'Server error' });
+      
+    } finally {
+      // 7. End the session regardless of success or failure
+      session.endSession();
     }
   }
 );
