@@ -159,7 +159,7 @@ const Dashboard = () => {
                         </div>
                         <div>
                             <h3 className="text-lg font-semibold text-white mb-1">Request Financing</h3>
-                            <p className="text-sm text-dark-400">Request loan against your orders</p>
+                            <p className="text-sm text-dark-400">Request Liquidity against your orders</p>
                         </div>
                     </div>
                 </Link>

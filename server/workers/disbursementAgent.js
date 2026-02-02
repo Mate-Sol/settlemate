@@ -6,6 +6,7 @@
 const FinancingRequest = require('../models/FinancingRequest');
 const PSPProfile = require('../models/PSPProfile');
 const OrderBook = require('../models/OrderBook');
+const ExternalOrderBook = require('../models/ExternalOrderBook');
 const contractService = require('../services/contractService');
 
 /**
@@ -67,11 +68,28 @@ async function disburseFinancing(requestId) {
         approvedAmount: psp.approvedAmount
       });
 
-      // Update order book status to Financed
+      // Update order book status to Financed (Internal)
       await OrderBook.findOneAndUpdate(
         { pspId: psp._id, referenceId: request.orderReference },
         { status: 'Financed' }
       );
+
+      // Update External PSP orderbook if applicable
+      if (request.isExternalPSP && (request.externalOrderId || request.orderReference)) {
+        await ExternalOrderBook.findOneAndUpdate(
+          { 
+            $or: [
+              { _id: request.externalOrderId },
+              { orderReference: request.orderReference }
+            ]
+          },
+          { 
+            loanStatus: 'Disbursed',
+            notes: `Loan disbursed successfully. TxHash: ${receipt.transactionHash.substring(0, 10)}...`
+          }
+        );
+        console.log(`[Disbursement Agent] Updated External PSP orderbook: ${request.orderReference || request.externalOrderId} -> Disbursed`);
+      }
 
       // If this is an external PSP request, notify them via webhook
       if (request.isExternalPSP && request.externalOrderId && request.externalPspApiKey) {

@@ -207,7 +207,7 @@ const OrderBook = () => {
                                                         to={`/loan-request?orderId=${order._id}`}
                                                         className="text-primary-400 hover:text-primary-300 text-sm transition-colors"
                                                     >
-                                                        Request Loan →
+                                                        Request Liquidity →
                                                     </Link>
                                                 )}
                                                 {order.loanRequested && order.loanStatus === 'Pending' && (

@@ -6,6 +6,7 @@
 const FinancingRequest = require('../models/FinancingRequest');
 const PSPProfile = require('../models/PSPProfile');
 const OrderBook = require('../models/OrderBook');
+const ExternalOrderBook = require('../models/ExternalOrderBook');
 const { disburseFinancing } = require('./disbursementAgent');
 
 /**
@@ -36,10 +37,29 @@ async function validateFinancingRequest(requestId) {
 
     // Check 1: PSP has approved credit line
     if (psp.creditLineStatus !== 'Approved' || !psp.approvedAmount) {
+      const rejectionReason = 'No approved credit line available';
       await FinancingRequest.findByIdAndUpdate(requestId, {
         status: 'Rejected',
-        rejectionReason: 'No approved credit line available'
+        rejectionReason
       });
+      
+      // Update External PSP orderbook if applicable
+      if (request.isExternalPSP && (request.externalOrderId || request.orderReference)) {
+        await ExternalOrderBook.findOneAndUpdate(
+          { 
+            $or: [
+              { _id: request.externalOrderId },
+              { orderReference: request.orderReference }
+            ]
+          },
+          { 
+            loanStatus: 'Rejected',
+            notes: rejectionReason
+          }
+        );
+        console.log(`[Validation Agent] Updated External PSP orderbook: ${request.orderReference || request.externalOrderId} -> Rejected`);
+      }
+      
       console.log(`[Validation Agent] REJECTED - No credit line`);
       return;
     }
@@ -51,10 +71,29 @@ async function validateFinancingRequest(requestId) {
       referenceId: request.orderReference
     });
     if (!order) {
+      const rejectionReason = `Order reference '${request.orderReference}' not found in your order book`;
       await FinancingRequest.findByIdAndUpdate(requestId, {
         status: 'Rejected',
-        rejectionReason: `Order reference '${request.orderReference}' not found in your order book`
+        rejectionReason
       });
+      
+      // Update External PSP orderbook if applicable
+      if (request.isExternalPSP && (request.externalOrderId || request.orderReference)) {
+        await ExternalOrderBook.findOneAndUpdate(
+          { 
+            $or: [
+              { _id: request.externalOrderId },
+              { orderReference: request.orderReference }
+            ]
+          },
+          { 
+            loanStatus: 'Rejected',
+            notes: rejectionReason
+          }
+        );
+        console.log(`[Validation Agent] Updated External PSP orderbook: ${request.orderReference || request.externalOrderId} -> Rejected`);
+      }
+      
       console.log(`[Validation Agent] REJECTED - Order not found`);
       return;
     }
@@ -62,10 +101,29 @@ async function validateFinancingRequest(requestId) {
 
     // Check 3: Order not already financed
     if (order.status === 'Financed') {
+      const rejectionReason = `Order '${request.orderReference}' is already financed`;
       await FinancingRequest.findByIdAndUpdate(requestId, {
         status: 'Rejected',
-        rejectionReason: `Order '${request.orderReference}' is already financed`
+        rejectionReason
       });
+      
+      // Update External PSP orderbook if applicable
+      if (request.isExternalPSP && (request.externalOrderId || request.orderReference)) {
+        await ExternalOrderBook.findOneAndUpdate(
+          { 
+            $or: [
+              { _id: request.externalOrderId },
+              { orderReference: request.orderReference }
+            ]
+          },
+          { 
+            loanStatus: 'Rejected',
+            notes: rejectionReason
+          }
+        );
+        console.log(`[Validation Agent] Updated External PSP orderbook: ${request.orderReference || request.externalOrderId} -> Rejected`);
+      }
+      
       console.log(`[Validation Agent] REJECTED - Order already financed`);
       return;
     }
@@ -81,10 +139,29 @@ async function validateFinancingRequest(requestId) {
     const availableCredit = psp.approvedAmount - currentDrawdown;
 
     if (request.amount > availableCredit) {
+      const rejectionReason = `Insufficient credit. Requested: $${request.amount.toLocaleString()}, Available: $${availableCredit.toLocaleString()}`;
       await FinancingRequest.findByIdAndUpdate(requestId, {
         status: 'Rejected',
-        rejectionReason: `Insufficient credit. Requested: $${request.amount.toLocaleString()}, Available: $${availableCredit.toLocaleString()}`
+        rejectionReason
       });
+      
+      // Update External PSP orderbook if applicable
+      if (request.isExternalPSP && (request.externalOrderId || request.orderReference)) {
+        await ExternalOrderBook.findOneAndUpdate(
+          { 
+            $or: [
+              { _id: request.externalOrderId },
+              { orderReference: request.orderReference }
+            ]
+          },
+          { 
+            loanStatus: 'Rejected',
+            notes: rejectionReason
+          }
+        );
+        console.log(`[Validation Agent] Updated External PSP orderbook: ${request.orderReference || request.externalOrderId} -> Rejected`);
+      }
+      
       console.log(`[Validation Agent] REJECTED - Insufficient credit`);
       return;
     }

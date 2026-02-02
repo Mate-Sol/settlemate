@@ -779,7 +779,7 @@ const RepaymentModal = ({ isOpen, onClose, financing, onRepaymentSuccess }) => {
                 {/* Interest Details */}
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                   <div>
-                    <span className="text-sm text-gray-600 block">Loan Interest (Utilized)</span>
+                    <span className="text-sm text-gray-600 block"> Interest (Utilized)</span>
                     <span className="text-xs text-gray-500">
                       {quote.daysElapsed} days @ {quote.utilizedBips} bps/day
                     </span>

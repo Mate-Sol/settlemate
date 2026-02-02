@@ -58,7 +58,7 @@ const CFODashboard = () => {
 
   // Mock data for exposure distribution (will be updated)
   const exposureData = [
-    { name: 'Active Loans', value: stats.totalActiveCredit, color: '#10b981' },
+    { name: 'Active Liquidity', value: stats.totalActiveCredit, color: '#10b981' },
     { name: 'Available Liquidity', value: stats.totalApprovedCredit - stats.totalActiveCredit, color: '#6366f1' },
   ];
 

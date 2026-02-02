@@ -25,7 +25,7 @@ const Layout = ({ children }) => {
     const navItems = [
         { path: '/dashboard', icon: FaHome, label: 'Dashboard' },
         { path: '/orderbook', icon: FaBook, label: 'Order Book' },
-        { path: '/loan-request', icon: FaChartLine, label: 'Request Loan' },
+        { path: '/loan-request', icon: FaChartLine, label: 'Request Liquidity' },
     ];
 
     const isActive = (path) => {

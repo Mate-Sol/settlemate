@@ -96,7 +96,7 @@ const FinancialInfo = ({ data, onChange }) => {
 
       <div className="grid md:grid-cols-2 gap-6">
         <div>
-          <label className="input-label">Outstanding Loans *</label>
+          <label className="input-label">Outstanding Credit Lines *</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
             <input
