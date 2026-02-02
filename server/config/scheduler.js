@@ -5,6 +5,7 @@
 
 const cron = require('node-cron');
 const { processDailyMaintenance, markOverdueCharges } = require('../workers/creditMaintenanceWorker');
+const { startOrderbookScheduler } = require('../workers/orderbookGenerator');
 
 /**
  * Schedule daily maintenance calculation
@@ -59,6 +60,9 @@ function initializeScheduledJobs() {
   
   scheduleDailyMaintenance();
   scheduleOverdueChecking();
+  
+  // Start orderbook generator for external PSP
+  // startOrderbookScheduler();
   
   console.log('[Scheduler] All jobs initialized successfully');
 }

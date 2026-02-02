@@ -58,8 +58,8 @@ const pspProfileSchema = new mongoose.Schema({
   },
   creditLineStatus: {
     type: String,
-    enum: ['Pending', 'Approved', 'Rejected', 'Active', 'Suspended'],
-    default: 'Pending'
+    enum: ['Pending', 'Approved', 'Rejected', 'Active', 'Suspended', 'None'],
+    default: 'None'
   },
   requestedAmount: Number,
   requestedDuration: Number,
