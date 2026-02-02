@@ -8,7 +8,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -162,7 +162,7 @@ const Login = () => {
           <p className="text-center text-gray-600 mt-6">
             Don't have an account?{' '}
             <a href="/register" className="text-brand-purple hover:underline font-medium">
-              Apply for Credit
+              Apply for Liquidation
             </a>
           </p>
         </div>

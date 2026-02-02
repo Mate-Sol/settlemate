@@ -12,13 +12,13 @@ const Register = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  
+
   const [formData, setFormData] = useState({
     // Auth credentials (collected in first step)
     email: '',
     password: '',
     name: '',
-    
+
     // Company Info
     companyName: '',
     registrationNo: '',
@@ -31,23 +31,23 @@ const Register = () => {
     uboName: '',
     uboOwnership: '',
     isPEP: false,
-    
+
     // Business Operations
     sector: '',
     transactionVolume: '',
     products: [''],
     customers: [''],
     suppliers: [''],
-    
+
     // Financial Info
     annualRevenue: '',
     projectedRevenue: '',
     profitMargin: '',
     monthlyCashFlow: '',
-    outstandingLoans: '',
+    rolledOutCreditLines: '',
     primaryBank: '',
-    bankAccountNo: '',
-    swiftCode: '',
+    currentAllocation: '',
+    walletAddress: '',
     hasDefaultHistory: false,
     defaultDetails: '',
   });
@@ -71,9 +71,9 @@ const Register = () => {
         const result = await register({
           // Auth credentials
           email: formData.contactEmail || formData.email,
-          password: formData.password || 'TempPassword123!', // User should set this in CompanyInfo step
+          password: formData.password || 'demo123', // User should set this in CompanyInfo step
           name: formData.contactName || formData.companyName,
-          
+
           // Company info
           companyName: formData.companyName,
           registrationNo: formData.registrationNo,
@@ -84,23 +84,26 @@ const Register = () => {
           contactPhone: formData.contactPhone,
           uboDetails: `${formData.uboName} - ${formData.uboOwnership}% ownership`,
           pepExposure: formData.isPEP,
-          
+
           // Business operations
           sector: formData.sector,
           transactionVolume: formData.transactionVolume,
           keyProducts: formData.products.filter(p => p.trim() !== ''),
           topCustomers: formData.customers.filter(c => c.trim() !== ''),
           topSuppliers: formData.suppliers.filter(s => s.trim() !== ''),
-          
+
           // Financial info
           annualRevenue: formData.annualRevenue,
-          outstandingLoans: formData.outstandingLoans,
-          bankName: formData.primaryBank,
-          bankAccountNo: formData.bankAccountNo,
-          swiftCode: formData.swiftCode,
+          projectedRevenue: formData.projectedRevenue,
+          profitMargin: formData.profitMargin,
+          monthlyCashFlow: formData.monthlyCashFlow,
+          rolledOutCreditLines: formData.rolledOutCreditLines,
+          primaryBank: formData.primaryBank,
+          currentAllocation: formData.currentAllocation,
+          walletAddress: formData.walletAddress,
           defaultHistory: formData.hasDefaultHistory ? formData.defaultDetails : 'No default history'
         });
-        
+
         if (result.success) {
           // Redirect to apply financing limit after successful registration
           navigate('/psp/apply-limit');

@@ -45,10 +45,13 @@ router.post('/register',
         topSuppliers,
         // Financial info
         annualRevenue,
-        outstandingLoans,
-        bankName,
-        bankAccountNo,
-        swiftCode,
+        rolledOutCreditLines,
+        primaryBank,
+        currentAllocation,
+        walletAddress,
+        projectedRevenue,
+        profitMargin,
+        monthlyCashFlow,
         defaultHistory
       } = req.body;
 
@@ -92,12 +95,13 @@ router.post('/register',
         topSuppliers: topSuppliers || [],
         transactionVolume,
         annualRevenue: annualRevenue ? parseFloat(annualRevenue) : undefined,
-        outstandingLoans: outstandingLoans ? parseFloat(outstandingLoans) : undefined,
-        bankAccount: {
-          bankName,
-          accountNumber: bankAccountNo,
-          swiftCode
-        },
+        rolledOutCreditLines: rolledOutCreditLines ? parseFloat(rolledOutCreditLines) : undefined,
+        primaryBank,
+        currentAllocation: currentAllocation ? parseFloat(currentAllocation) : undefined,
+        walletAddress,
+        projectedRevenue: projectedRevenue ? parseFloat(projectedRevenue) : undefined,
+        profitMargin: profitMargin ? parseFloat(profitMargin) : undefined,
+        monthlyCashFlow: monthlyCashFlow ? parseFloat(monthlyCashFlow) : undefined,
         defaultHistory,
         creditLineStatus: 'None'
       });

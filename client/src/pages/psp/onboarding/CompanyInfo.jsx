@@ -35,7 +35,7 @@ const CompanyInfo = ({ data, onChange }) => {
         </div>
 
         <div>
-          <label className="input-label">Registration Number *</label>
+          <label className="input-label">Company Registration Number *</label>
           <input
             type="text"
             value={data.registrationNo || ''}

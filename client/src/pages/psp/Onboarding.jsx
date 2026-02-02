@@ -37,7 +37,6 @@ const Onboarding = () => {
     projectedRevenue: '7500000',
     profitMargin: '15',
     monthlyCashFlow: '500000',
-    outstandingLoans: '0',
     primaryBank: 'Barclays',
     bankAccountNo: '12345678',
     swiftCode: 'BARCGB22',

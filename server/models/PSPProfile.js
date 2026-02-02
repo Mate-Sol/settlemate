@@ -32,11 +32,13 @@ const pspProfileSchema = new mongoose.Schema({
   // Financial Information
   annualRevenue: Number,
   outstandingLoans: Number,
-  bankAccount: {
-    bankName: String,
-    accountNumber: String,
-    swiftCode: String
-  },
+  rolledOutCreditLines: Number,
+  primaryBank: String,
+  currentAllocation: Number,
+  walletAddress: String,
+  projectedRevenue: Number,
+  profitMargin: Number,
+  monthlyCashFlow: Number,
   defaultHistory: String,
   
   // KYC Documents

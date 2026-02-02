@@ -91,18 +91,43 @@ const FinancialInfo = ({ data, onChange }) => {
 
       <h3 className="font-semibold flex items-center gap-2">
         <Building className="w-5 h-5 text-brand-purple" />
-        Existing Debt & Banking
+        Existing Liquidation Providers
       </h3>
 
       <div className="grid md:grid-cols-2 gap-6">
+
         <div>
-          <label className="input-label">Outstanding Credit Lines *</label>
+          <label className="input-label">Current Liquidation Provider *</label>
+          <input
+            type="text"
+            value={data.primaryBank || ''}
+            onChange={handleChange('primaryBank')}
+            className="input-field"
+            placeholder="XYZ"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="input-label">Current Allocation *</label>
+          <input
+            type="text"
+            value={data.currentAllocation || ''}
+            onChange={handleChange('currentAllocation')}
+            className="input-field"
+            placeholder="10,000"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="input-label">Rolled out Credit Lines *</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
             <input
               type="number"
-              value={data.outstandingLoans || ''}
-              onChange={handleChange('outstandingLoans')}
+              value={data.rolledOutCreditLines || ''}
+              onChange={handleChange('rolledOutCreditLines')}
               className="input-field pl-8"
               placeholder="0"
               required
@@ -111,37 +136,13 @@ const FinancialInfo = ({ data, onChange }) => {
         </div>
 
         <div>
-          <label className="input-label">Primary Bank *</label>
+          <label className="input-label">Wallet Address *</label>
           <input
             type="text"
-            value={data.primaryBank || ''}
-            onChange={handleChange('primaryBank')}
+            value={data.walletAddress || ''}
+            onChange={handleChange('walletAddress')}
             className="input-field"
-            placeholder="Bank Name"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="input-label">Bank Account Number *</label>
-          <input
-            type="text"
-            value={data.bankAccountNo || ''}
-            onChange={handleChange('bankAccountNo')}
-            className="input-field"
-            placeholder="Account Number"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="input-label">SWIFT/BIC Code *</label>
-          <input
-            type="text"
-            value={data.swiftCode || ''}
-            onChange={handleChange('swiftCode')}
-            className="input-field"
-            placeholder="XXXXXXXX"
+            placeholder="0x1234567890123456789012345678901234567890"
             required
           />
         </div>
@@ -188,7 +189,7 @@ const FinancialInfo = ({ data, onChange }) => {
 
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mt-6">
         <p className="text-sm text-blue-800">
-          <strong>Note:</strong> All financial information provided will be verified during the credit assessment process. 
+          <strong>Note:</strong> All financial information provided will be verified during the credit assessment process.
           Please ensure accuracy to avoid delays in your application.
         </p>
       </div>
