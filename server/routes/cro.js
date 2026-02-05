@@ -59,7 +59,7 @@ router.post('/applications/:id/approve', async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
 
-    if (profile.creditLineStatus !== 'Pending' && profile.creditLineStatus !== 'UnderReview') {
+    if (profile.creditLineStatus !== 'Pending' && profile.creditLineStatus !== 'NeedMoreInfo') {
       return res.status(400).json({ message: 'Application is not pending' });
     }
 
@@ -162,7 +162,7 @@ router.post('/applications/:id/request-info', async (req, res) => {
 
     profile.creditLineStatus = 'NeedMoreInfo';
     profile.cadMessage = notes || 'Additional information required.';
-    profile.approvedAmount = 0; // Reset credit line
+    // profile.approvedAmount = 0; // Reset credit line
     await profile.save();
 
     res.json({ message: 'Additional information requested', profile });

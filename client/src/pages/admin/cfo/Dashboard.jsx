@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { CreditCard, BarChart3, PieChart as PieChartIcon, TrendingUp, LogOut, DollarSign, Loader2 } from 'lucide-react';
+import { CreditCard, BarChart3, PieChart as PieChartIcon, TrendingUp, LogOut, DollarSign, Loader2, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { cfoAPI } from '../../../services/api';
 import CFOFinancingsTable from '../../../components/CFOFinancingsTable';
@@ -56,10 +56,11 @@ const CFODashboard = () => {
     }
   };
 
-  // Mock data for exposure distribution (will be updated)
+  // Data for exposure distribution
   const exposureData = [
-    { name: 'Active Liquidity', value: stats.totalActiveCredit, color: '#10b981' },
-    { name: 'Available Liquidity', value: stats.totalApprovedCredit - stats.totalActiveCredit, color: '#6366f1' },
+    { name: 'Active Exposure', value: stats.totalActiveCredit, color: '#8b5cf6' }, // Purple
+    { name: 'Available Liquidity', value: Math.max(0, stats.totalApprovedCredit - stats.totalActiveCredit), color: '#10b981' }, // Green
+    { name: 'Revision Needed', value: stats.revisionNeededCredit, color: '#f59e0b' }, // Amber
   ];
 
   const formatCurrency = (value) => {
@@ -135,22 +136,35 @@ const CFODashboard = () => {
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             <div className="stats-card">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-5 h-5 text-brand-purple" />
-                <span className="stats-label">Total Approved Credit</span>
+                <DollarSign className="w-5 h-5 text-status-success" />
+                <span className="stats-label font-semibold text-green-700">Total Approved Credit (Active)</span>
               </div>
-              <span className="stats-value text-gradient">{formatCurrency(stats.totalApprovedCredit)}</span>
+              <span className="stats-value text-green-600">{formatCurrency(stats.totalApprovedCredit)}</span>
+              <p className="text-xs text-gray-400 mt-1">Currently active & non-expired</p>
             </div>
             <div className="stats-card">
-              <span className="stats-label">Total Active Credit</span>
-              <span className="stats-value text-status-warning">{formatCurrency(stats.totalActiveCredit)}</span>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <span className="stats-label font-semibold text-amber-700">In-Review / Expired Credit</span>
+              </div>
+              <span className="stats-value text-amber-600">{formatCurrency(stats.revisionNeededCredit)}</span>
+              <p className="text-xs text-gray-400 mt-1">Needs attention or renewal</p>
             </div>
             <div className="stats-card">
-              <span className="stats-label">Active Financings</span>
-              <span className="stats-value text-status-success">{stats.totalFinancings}</span>
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-brand-purple" />
+                <span className="stats-label font-semibold text-brand-purple">Total Active Exposure</span>
+              </div>
+              <span className="stats-value text-gradient">{formatCurrency(stats.totalActiveCredit)}</span>
+              <p className="text-xs text-gray-400 mt-1">Currently utilized liquidity</p>
             </div>
             <div className="stats-card">
-              <span className="stats-label">Interest Revenue (YTD)</span>
-              <span className="stats-value">{formatCurrency(stats.totalInterestRevenue)}</span>
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="w-5 h-5 text-brand-magenta" />
+                <span className="stats-label font-semibold text-brand-magenta">Interest Revenue (YTD)</span>
+              </div>
+              <span className="stats-value text-brand-magenta">{formatCurrency(stats.totalInterestRevenue)}</span>
+              <p className="text-xs text-gray-400 mt-1">Total yield generated</p>
             </div>
           </div>
 
@@ -373,13 +387,13 @@ const CFODashboard = () => {
                 </div>
               </div>
             </div>
-              <EarnedYieldChart yieldData={yieldData} />
+            <EarnedYieldChart yieldData={yieldData} />
           </div>
 
           {/* Yield Stats */}
           <div className="grid md:grid-cols-1 gap-6 mb-8">
             {/* Earned Yield Chart */}
-          
+
 
 
           </div>

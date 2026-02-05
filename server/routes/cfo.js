@@ -15,18 +15,47 @@ router.use(authorizeRoles('CFO'));
 // @access  Private (CFO only)
 router.get('/dashboard-stats', async (req, res) => {
   try {
-    // Get all PSP profiles with approved credit lines
-    const approvedProfiles = await PSPProfile.find({ creditLineStatus: 'Approved' });
-    
-    // Calculate total exposure and stats
+    const contractService = require('../services/contractService');
+
+    // Get all PSP profiles
+    const allProfiles = await PSPProfile.find({});
+
     const stats = {
-      totalPSPs: approvedProfiles.length,
-      totalApprovedCredit: approvedProfiles.reduce((sum, p) => sum + (p.approvedAmount || 0), 0),
+      totalPSPs: 0,
+      totalApprovedCredit: 0, // This will be ACTIVE approved credit
+      revisionNeededCredit: 0, // This will be Expired or In-Review/NeedMoreInfo credit
       totalActiveCredit: 0,
       totalFinancings: 0,
       pendingApplications: 0,
       totalInterestRevenue: 0
     };
+
+    // Iterate through profiles to calculate credit stats
+    for (const profile of allProfiles) {
+      const amount = profile.approvedAmount || 0;
+
+      if (profile.creditLineStatus === 'Approved') {
+        stats.totalPSPs++;
+
+        let isExpired = false;
+        if (profile.assignedPoolAddress) {
+          const expiryInfo = await contractService.getRemainingDays(profile.assignedPoolAddress);
+          if (expiryInfo.success && expiryInfo.isExpired) {
+            isExpired = true;
+          }
+        }
+
+        if (isExpired) {
+          stats.revisionNeededCredit += amount;
+        } else {
+          stats.totalApprovedCredit += amount;
+        }
+      } else if (['NeedMoreInfo', 'UnderReview'].includes(profile.creditLineStatus)) {
+        stats.revisionNeededCredit += (profile.approvedAmount || 0) - (profile.currentlyUtilized || 0);
+      } else if (profile.creditLineStatus === 'Pending') {
+        stats.pendingApplications++;
+      }
+    }
 
     // Get all active financings
     const activeFinancings = await FinancingRequest.find({ status: 'Disbursed' });
@@ -36,12 +65,8 @@ router.get('/dashboard-stats', async (req, res) => {
     // Calculate total interest revenue
     activeFinancings.forEach(f => {
       const interest = f.accruedInterest;
-      stats.totalInterestRevenue += interest.total;
+      stats.totalInterestRevenue += (interest.total || 0);
     });
-
-    // Get pending applications
-    const pendingCount = await PSPProfile.countDocuments({ creditLineStatus: 'Pending' });
-    stats.pendingApplications = pendingCount;
 
     res.json(stats);
   } catch (error) {
@@ -58,8 +83,8 @@ router.get('/all-financings', async (req, res) => {
     const financings = await FinancingRequest.find({
       status: { $in: ['Pending', 'Validated', 'Disbursed'] }
     })
-    .populate('pspId', 'companyName')
-    .sort({ createdAt: -1 });
+      .populate('pspId', 'companyName')
+      .sort({ createdAt: -1 });
 
     // Calculate exposure summary
     const exposure = calculateTotalExposure(financings);
@@ -125,12 +150,12 @@ router.get('/yield-history', async (req, res) => {
     const monthlyYield = {};
     financings.forEach(f => {
       if (!f.disbursedAt) return;
-      
+
       const month = f.disbursedAt.toISOString().substring(0, 7); // YYYY-MM
       if (!monthlyYield[month]) {
         monthlyYield[month] = { utilized: 0, unutilized: 0, total: 0 };
       }
-      
+
       const interest = f.accruedInterest;
       monthlyYield[month].utilized += interest.utilized;
       monthlyYield[month].unutilized += interest.unutilized;
@@ -158,11 +183,11 @@ router.get('/yield-history', async (req, res) => {
 router.get('/earned-yield-history', async (req, res) => {
   try {
     // Get all disbursed financings
-    const financings = await FinancingRequest.find({ 
+    const financings = await FinancingRequest.find({
       status: { $in: ['Repaid'] }
     })
-    .populate('pspId', 'companyName creditLineDuration utilizedBips unutilizedBips approvedAmount')
-    .sort({ disbursedAt: 1 });
+      .populate('pspId', 'companyName creditLineDuration utilizedBips unutilizedBips approvedAmount')
+      .sort({ disbursedAt: 1 });
 
     // Group by month and calculate utilized/unutilized yield
     const monthlyData = {};
@@ -188,7 +213,7 @@ router.get('/earned-yield-history', async (req, res) => {
       const utilizedBips = financing.pspId?.utilizedBips || 0;
       const unutilizedBips = financing.pspId?.unutilizedBips || 0;
       const creditLimit = financing.pspId?.approvedAmount || principal;
-      
+
       // Determine the end date for yield calculation
       let endDate;
       if (financing.status === 'Repaid' && financing.repaymentDate) {
@@ -199,10 +224,10 @@ router.get('/earned-yield-history', async (req, res) => {
 
       // Calculate days held
       const daysHeld = Math.max(0, Math.ceil((endDate - disbursedDate) / (1000 * 60 * 60 * 24)));
-      
+
       // Calculate utilized yield (on the amount disbursed)
       const utilizedYield = (principal * utilizedBips * daysHeld) / 10000;
-      
+
       // Calculate unutilized yield (on unused credit)
       const unutilizedAmount = Math.max(0, creditLimit - principal);
       const unutilizedYield = (unutilizedAmount * unutilizedBips * daysHeld) / 10000;
@@ -214,15 +239,15 @@ router.get('/earned-yield-history', async (req, res) => {
     });
 
     // Convert to array and sort by month
-    const chartData = Object.values(monthlyData).sort((a, b) => 
+    const chartData = Object.values(monthlyData).sort((a, b) =>
       a.month.localeCompare(b.month)
     );
 
     // Format month labels (e.g., "Jan 2024")
     const formattedData = chartData.map(item => ({
-      month: new Date(item.month + '-01').toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: 'numeric' 
+      month: new Date(item.month + '-01').toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric'
       }),
       utilizedYield: Math.round(item.utilizedYield * 100) / 100,
       unutilizedYield: Math.round(item.unutilizedYield * 100) / 100,
@@ -242,10 +267,10 @@ router.get('/earned-yield-history', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching earned yield history:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: 'Failed to fetch earned yield history',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -258,40 +283,40 @@ router.get('/yield-analytics', async (req, res) => {
   try {
     // Get all disbursed financings for accrued (expected) yield
     const activeFinancings = await FinancingRequest.find({ status: 'Disbursed' });
-    
+
     // Calculate total accrued yield (expected)
     let accruedUtilized = 0;
     let accruedUnutilized = 0;
-    
+
     activeFinancings.forEach(financing => {
       const interest = financing.accruedInterest;
       accruedUtilized += interest.utilized || 0;
       accruedUnutilized += interest.unutilized || 0;
     });
-    
+
     const totalAccruedYield = accruedUtilized + accruedUnutilized;
-    
+
     // Get all completed repayments for realized yield
     const repayments = await RepaymentRecord.find({ status: 'Completed' });
-    
+
     const totalInterestReceived = repayments.reduce((sum, r) => sum + (r.actualInterestPaid || 0), 0);
     const totalRepayments = repayments.length;
     const averageInterestPerRepayment = totalRepayments > 0 ? totalInterestReceived / totalRepayments : 0;
-    
+
     // Calculate variance
     const variance = totalInterestReceived - totalAccruedYield;
-    const variancePercentage = totalAccruedYield > 0 
-      ? (variance / totalAccruedYield) * 100 
+    const variancePercentage = totalAccruedYield > 0
+      ? (variance / totalAccruedYield) * 100
       : 0;
-    
-    const revenueRate = totalAccruedYield > 0 
-      ? (totalInterestReceived / totalAccruedYield) * 100 
+
+    const revenueRate = totalAccruedYield > 0
+      ? (totalInterestReceived / totalAccruedYield) * 100
       : 0;
-    
+
     let varianceStatus = 'on_target';
     if (variancePercentage > 5) varianceStatus = 'over_target';
     if (variancePercentage < -5) varianceStatus = 'under_target';
-    
+
     res.json({
       accruedYield: {
         utilized: Math.round(accruedUtilized * 100) / 100,
@@ -305,7 +330,7 @@ router.get('/yield-analytics', async (req, res) => {
       },
       variance: {
         amount: Math.round(variance * 100) / 100,
-        percentage: Math.round(variancePercentage* 100) / 100,
+        percentage: Math.round(variancePercentage * 100) / 100,
         status: varianceStatus
       },
       revenueRate: Math.round(revenueRate * 100) / 100
@@ -322,30 +347,30 @@ router.get('/yield-analytics', async (req, res) => {
 router.get('/repayment-history', async (req, res) => {
   try {
     const { startDate, endDate, pspId } = req.query;
-    
+
     let query = { status: 'Completed' };
-    
+
     // Apply date filters
     if (startDate || endDate) {
       query.repaymentDate = {};
       if (startDate) query.repaymentDate.$gte = new Date(startDate);
       if (endDate) query.repaymentDate.$lte = new Date(endDate);
     }
-    
+
     // Apply PSP filter
     if (pspId) {
       query.pspId = pspId;
     }
-    
+
     const repayments = await RepaymentRecord.find(query)
       .populate('pspId', 'companyName')
       .populate('financingRequestId', 'orderReference')
       .sort({ repaymentDate: -1 });
-    
+
     // Calculate summary
     const totalPrincipal = repayments.reduce((sum, r) => sum + (r.principalAmount || 0), 0);
     const totalInterestCollected = repayments.reduce((sum, r) => sum + (r.actualInterestPaid || 0), 0);
-    
+
     const formattedRepayments = repayments.map(r => ({
       _id: r._id,
       psp: r.pspId?.companyName || 'Unknown',
@@ -358,7 +383,7 @@ router.get('/repayment-history', async (req, res) => {
       repaymentDate: r.repaymentDate,
       txHash: r.txHash
     }));
-    
+
     res.json({
       repayments: formattedRepayments,
       summary: {
