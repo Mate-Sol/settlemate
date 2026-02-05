@@ -22,7 +22,7 @@ router.post('/register',
   async (req, res) => {
     // 1. Start the session
     const session = await mongoose.startSession();
-    
+
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -32,7 +32,7 @@ router.post('/register',
       // 2. Start the transaction
       session.startTransaction();
 
-      const { 
+      const {
         email, password, name, companyName,
         // Additional company info
         registrationNo, country, yearEstablished,
@@ -48,10 +48,10 @@ router.post('/register',
       // Check if user exists
       // Note: Passing session here ensures read consistency within the transaction
       let user = await User.findOne({ email }).session(session);
-      
+
       if (user) {
         // We must abort here because we are returning early
-        await session.abortTransaction(); 
+        await session.abortTransaction();
         return res.status(400).json({ message: 'User already exists' });
       }
 
@@ -128,10 +128,10 @@ router.post('/register',
       // 6. Abort transaction on error (Revert changes)
       // This undoes user.save() if pspProfile.save() failed
       await session.abortTransaction();
-      
+
       console.error("Transaction Aborted:", error);
       res.status(500).json({ message: 'Server error' });
-      
+
     } finally {
       // 7. End the session regardless of success or failure
       session.endSession();
@@ -175,13 +175,35 @@ router.post('/login',
         { expiresIn: '7d' }
       );
 
+      let creditLineStatus = null;
+      let isExpired = false;
+      if (user.role === 'PSP') {
+        const profile = await PSPProfile.findOne({ userId: user._id });
+        if (profile) {
+          creditLineStatus = profile.creditLineStatus;
+
+          // Check for expiry if they have a pool
+          if (profile.assignedPoolAddress) {
+            const contractService = require('../services/contractService');
+            const expiryInfo = await contractService.getRemainingDays(profile.assignedPoolAddress);
+            if (expiryInfo.success && expiryInfo.isExpired) {
+              isExpired = true;
+            }
+          }
+        } else {
+          creditLineStatus = 'None';
+        }
+      }
+
       res.json({
         token,
         user: {
           id: user._id,
           email: user.email,
           name: user.name,
-          role: user.role
+          role: user.role,
+          creditLineStatus, // Added to facilitate redirection
+          isExpired // Added to facilitate redirection
         }
       });
     } catch (error) {

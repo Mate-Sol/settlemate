@@ -67,6 +67,7 @@ const pspProfileSchema = new mongoose.Schema({
       "Approved",
       "Rejected",
       "UnderReview",
+      "NeedMoreInfo",
       "Active",
       "Suspended",
       "None",
@@ -80,6 +81,12 @@ const pspProfileSchema = new mongoose.Schema({
   approvedDuration: Number,
   utilizedBips: Number,
   unutilizedBips: Number,
+
+  // CAD/CRO feedback
+  cadMessage: {
+    type: String,
+    default: "",
+  },
 
   // Blockchain Integration
   walletAddress: String,

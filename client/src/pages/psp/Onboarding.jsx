@@ -1,48 +1,106 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { CreditCard, TrendingUp, Wallet, FileText, LogOut, UserPlus, Save, Loader2 } from 'lucide-react';
+import { CreditCard, TrendingUp, Wallet, FileText, LogOut, UserPlus, Save, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import CompanyInfo from './onboarding/CompanyInfo';
 import BusinessOperations from './onboarding/BusinessOperations';
 import FinancialInfo from './onboarding/FinancialInfo';
+import { pspAPI } from '../../services/api';
 
 const Onboarding = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('company');
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(null);
+  const [profile, setProfile] = useState(null);
 
   const [formData, setFormData] = useState({
     // Company Info
-    companyName: 'Acme Payments',
-    registrationNo: '12345678',
-    country: 'UK',
-    yearEstablished: '2020',
-    contactName: 'John Smith',
-    contactPosition: 'CEO',
-    contactEmail: 'john@acmepayments.com',
-    contactPhone: '+44 20 1234 5678',
-    uboName: 'John Smith',
-    uboOwnership: '100',
+    companyName: '',
+    registrationNo: '',
+    country: '',
+    yearEstablished: '',
+    contactName: '',
+    contactPosition: '',
+    contactEmail: '',
+    contactPhone: '',
+    uboName: '',
+    uboOwnership: '',
     isPEP: false,
-    
+
     // Business Operations
-    sector: 'Payment Processing',
-    transactionVolume: '1m-5m',
-    products: ['Payment Gateway', 'Invoice Processing'],
-    customers: ['TechCorp Inc', 'Global Retail'],
-    suppliers: ['Visa', 'Mastercard'],
-    
+    sector: '',
+    transactionVolume: '',
+    products: [''],
+    customers: [''],
+    suppliers: [''],
+
     // Financial Info
-    annualRevenue: '5000000',
-    projectedRevenue: '7500000',
-    profitMargin: '15',
-    monthlyCashFlow: '500000',
-    primaryBank: 'Barclays',
-    bankAccountNo: '12345678',
-    swiftCode: 'BARCGB22',
+    annualRevenue: '',
+    projectedRevenue: '',
+    profitMargin: '',
+    monthlyCashFlow: '',
+    primaryBank: '',
+    bankAccountNo: '',
+    swiftCode: '',
     hasDefaultHistory: false,
     defaultDetails: '',
+    currentAllocation: '',
+    rolledOutCreditLines: '',
+    walletAddress: ''
   });
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setLoading(true);
+        const response = await pspAPI.getProfile();
+        const data = response.data;
+        setProfile(data);
+
+        setFormData({
+          companyName: data.companyName || '',
+          registrationNo: data.registrationNo || '',
+          country: data.country || '',
+          yearEstablished: data.yearEstablished?.toString() || '',
+          contactName: data.keyContact?.name || '',
+          contactPosition: data.keyContact?.position || '', // Assuming position exists or handled
+          contactEmail: data.keyContact?.email || '',
+          contactPhone: data.keyContact?.phone || '',
+          uboName: data.uboDetails || '',
+          uboOwnership: '', // Not in model yet, but placeholder
+          isPEP: data.pepExposure || false,
+          sector: data.sector || '',
+          transactionVolume: data.transactionVolume || '',
+          products: data.keyProducts?.length > 0 ? data.keyProducts : [''],
+          customers: data.topCustomers?.length > 0 ? data.topCustomers : [''],
+          suppliers: data.topSuppliers?.length > 0 ? data.topSuppliers : [''],
+          annualRevenue: data.annualRevenue?.toString() || '',
+          projectedRevenue: data.projectedRevenue?.toString() || '',
+          profitMargin: data.profitMargin?.toString() || '',
+          monthlyCashFlow: data.monthlyCashFlow?.toString() || '',
+          primaryBank: data.primaryBank || '',
+          bankAccountNo: '', // Not mapped in psp.js allowedUpdates yet
+          swiftCode: '', // Not mapped in psp.js allowedUpdates yet
+          hasDefaultHistory: !!data.defaultHistory,
+          defaultDetails: data.defaultHistory || '',
+          currentAllocation: data.currentAllocation?.toString() || '',
+          rolledOutCreditLines: data.rolledOutCreditLines?.toString() || '',
+          walletAddress: data.walletAddress || ''
+        });
+      } catch (err) {
+        console.error('Failed to fetch profile:', err);
+        setError('Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
 
   const updateFormData = (stepData) => {
     setFormData(prev => ({ ...prev, ...stepData }));
@@ -50,11 +108,45 @@ const Onboarding = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setError(null);
+    try {
+      const payload = {
+        companyName: formData.companyName,
+        registrationNo: formData.registrationNo,
+        country: formData.country,
+        yearEstablished: parseInt(formData.yearEstablished),
+        keyContact: {
+          name: formData.contactName,
+          email: formData.contactEmail,
+          phone: formData.contactPhone
+        },
+        uboDetails: formData.uboName,
+        pepExposure: formData.isPEP,
+        sector: formData.sector,
+        transactionVolume: formData.transactionVolume,
+        keyProducts: formData.products.filter(p => p.trim() !== ''),
+        topCustomers: formData.customers.filter(c => c.trim() !== ''),
+        topSuppliers: formData.suppliers.filter(s => s.trim() !== ''),
+        annualRevenue: parseFloat(formData.annualRevenue),
+        projectedRevenue: parseFloat(formData.projectedRevenue),
+        profitMargin: parseFloat(formData.profitMargin),
+        monthlyCashFlow: parseFloat(formData.monthlyCashFlow),
+        primaryBank: formData.primaryBank,
+        currentAllocation: parseFloat(formData.currentAllocation),
+        walletAddress: formData.walletAddress,
+        rolledOutCreditLines: parseFloat(formData.rolledOutCreditLines),
+        defaultHistory: formData.hasDefaultHistory ? formData.defaultDetails : ''
+      };
+
+      await pspAPI.updateProfile(payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error('Failed to save profile:', err);
+      setError(err.response?.data?.message || 'Failed to save changes');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const tabs = [
@@ -73,16 +165,13 @@ const Onboarding = () => {
             <span className="text-xl font-bold">CredMate</span>
           </div>
         </div>
-        
+
         <nav className="p-4 space-y-2">
           <a href="/psp/dashboard" className="sidebar-link">
             <TrendingUp className="w-5 h-5" />
             Dashboard
           </a>
-          <a href="/psp/order-book" className="sidebar-link">
-            <FileText className="w-5 h-5" />
-            Order Book
-          </a>
+
           {/* <a href="/psp/wallet" className="sidebar-link">
             <Wallet className="w-5 h-5" />
             Wallet
@@ -94,7 +183,7 @@ const Onboarding = () => {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-          <button 
+          <button
             onClick={logout}
             className="sidebar-link w-full justify-start text-white/60 hover:text-white"
           >
@@ -107,33 +196,62 @@ const Onboarding = () => {
       {/* Main Content */}
       <main className="ml-64 p-8">
         <div className="max-w-4xl mx-auto">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {profile?.creditLineStatus === 'NeedMoreInfo' && profile.cadMessage && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
+              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-amber-900">Message from Credit Approval Department</h3>
+                <p className="text-amber-800 text-sm mt-1">{profile.cadMessage}</p>
+                <p className="text-amber-700 text-xs mt-2 italic">Please update your company profile information below as requested.</p>
+              </div>
+            </div>
+          )}
+
           <header className="mb-8 flex justify-between items-start">
             <div>
               <h1 className="page-header">Company Profile</h1>
               <p className="text-gray-600">Manage your company information and KYC details</p>
             </div>
-            <button 
-              onClick={handleSave}
-              disabled={isSaving}
-              className="btn-brand flex items-center gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Saving...
-                </>
-              ) : saved ? (
-                <>
-                  <Save className="w-5 h-5" />
-                  Saved!
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  Save Changes
-                </>
+            <div className="flex gap-3">
+              {(profile?.creditLineStatus === 'NeedMoreInfo' || profile?.creditLineStatus === 'None' || (profile?.creditLineStatus === 'Approved' && profile?.assignedPoolAddress)) && (
+                <button
+                  onClick={() => navigate('/psp/apply-limit')}
+                  className="px-6 py-3 rounded-lg font-semibold border-2 border-brand-purple text-brand-purple hover:bg-brand-purple hover:text-white transition-all flex items-center gap-2"
+                >
+                  <ArrowRight className="w-5 h-5" />
+                  Proceed to Application
+                </button>
               )}
-            </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving || loading}
+                className="btn-brand flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Saving...
+                  </>
+                ) : saved ? (
+                  <>
+                    <Save className="w-5 h-5" />
+                    Saved!
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
           </header>
 
           {/* Tabs */}
@@ -142,11 +260,10 @@ const Onboarding = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 font-medium transition-colors relative ${
-                  activeTab === tab.id 
-                    ? 'text-brand-purple' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+                className={`px-4 py-3 font-medium transition-colors relative ${activeTab === tab.id
+                  ? 'text-brand-purple'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 {tab.label}
                 {activeTab === tab.id && (

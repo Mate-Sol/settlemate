@@ -14,7 +14,7 @@ router.use(authorizeRoles('CRO'));
 router.get('/applications', async (req, res) => {
   try {
     const { status } = req.query;
-    
+
     const query = status ? { creditLineStatus: status } : {};
     const applications = await PSPProfile.find(query)
       .populate('userId', 'name email')
@@ -34,7 +34,7 @@ router.get('/applications/:id', async (req, res) => {
   try {
     const application = await PSPProfile.findById(req.params.id)
       .populate('userId', 'name email');
-    
+
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
     }
@@ -54,7 +54,7 @@ router.post('/applications/:id/approve', async (req, res) => {
     const { approvedAmount, approvedDuration, walletAddress, notes } = req.body;
 
     const profile = await PSPProfile.findById(req.params.id);
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Application not found' });
     }
@@ -65,7 +65,7 @@ router.post('/applications/:id/approve', async (req, res) => {
 
     // Deploy CreditLinePool contract
     console.log('Deploying CreditLinePool contract for PSP:', walletAddress);
-    
+
     const utilizedBips = parseInt(process.env.DEFAULT_UTILIZED_BIPS) || 5;
     const unutilizedBips = parseInt(process.env.DEFAULT_UNUTILIZED_BIPS) || 1;
 
@@ -101,7 +101,7 @@ router.post('/applications/:id/approve', async (req, res) => {
 
     await profile.save();
 
-    
+
 
     // Fund the pool asynchronously (in background)
     console.log('Funding pool with USD-DF in background...');
@@ -132,7 +132,7 @@ router.post('/applications/:id/reject', async (req, res) => {
     const { notes } = req.body;
 
     const profile = await PSPProfile.findById(req.params.id);
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Application not found' });
     }
@@ -155,12 +155,14 @@ router.post('/applications/:id/request-info', async (req, res) => {
     const { notes } = req.body;
 
     const profile = await PSPProfile.findById(req.params.id);
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Application not found' });
     }
 
-    profile.creditLineStatus = 'UnderReview';
+    profile.creditLineStatus = 'NeedMoreInfo';
+    profile.cadMessage = notes || 'Additional information required.';
+    profile.approvedAmount = 0; // Reset credit line
     await profile.save();
 
     res.json({ message: 'Additional information requested', profile });

@@ -18,12 +18,24 @@ router.use(authorizeRoles('PSP'));
 router.get('/profile', async (req, res) => {
   try {
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
-    res.json(profile);
+    // Convert to object to add isExpired
+    const profileData = profile.toObject();
+    profileData.isExpired = false;
+
+    if (profile.assignedPoolAddress) {
+      const contractService = require('../services/contractService');
+      const expiryInfo = await contractService.getRemainingDays(profile.assignedPoolAddress);
+      if (expiryInfo.success && expiryInfo.isExpired) {
+        profileData.isExpired = true;
+      }
+    }
+
+    res.json(profileData);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -36,7 +48,7 @@ router.get('/profile', async (req, res) => {
 router.get('/credit-line-expiry', async (req, res) => {
   try {
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile || !profile.assignedPoolAddress) {
       return res.status(404).json({ message: 'No active credit line found' });
     }
@@ -45,7 +57,7 @@ router.get('/credit-line-expiry', async (req, res) => {
     const expiryInfo = await contractService.getRemainingDays(profile.assignedPoolAddress);
 
     if (!expiryInfo.success) {
-       return res.status(500).json({ message: 'Failed to fetch expiry information', error: expiryInfo.error });
+      return res.status(500).json({ message: 'Failed to fetch expiry information', error: expiryInfo.error });
     }
 
     res.json({
@@ -69,7 +81,7 @@ router.get('/credit-line-expiry', async (req, res) => {
 router.put('/profile', async (req, res) => {
   try {
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
@@ -79,7 +91,9 @@ router.put('/profile', async (req, res) => {
       'companyName', 'registrationNo', 'country', 'yearEstablished',
       'keyContact', 'uboDetails', 'pepExposure', 'sector', 'keyProducts',
       'topCustomers', 'topSuppliers', 'transactionVolume', 'annualRevenue',
-      'outstandingLoans', 'bankAccount', 'defaultHistory'
+      'outstandingLoans', 'rolledOutCreditLines', 'primaryBank',
+      'currentAllocation', 'walletAddress', 'projectedRevenue',
+      'profitMargin', 'monthlyCashFlow', 'defaultHistory'
     ];
 
     allowedUpdates.forEach(field => {
@@ -105,7 +119,7 @@ router.post('/apply-limit', async (req, res) => {
     const { requestedAmount, requestedDuration } = req.body;
 
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
@@ -118,6 +132,7 @@ router.post('/apply-limit', async (req, res) => {
     profile.requestedAmount = requestedAmount;
     profile.requestedDuration = requestedDuration;
     profile.creditLineStatus = 'Pending';
+    profile.cadMessage = ""; // Clear CAD message on re-submission
 
     await profile.save();
 
@@ -134,7 +149,7 @@ router.post('/apply-limit', async (req, res) => {
 router.get('/order-book', async (req, res) => {
   try {
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
@@ -156,7 +171,7 @@ router.post('/request-financing', async (req, res) => {
     const { amount, orderReference } = req.body;
 
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
@@ -200,7 +215,7 @@ router.post('/request-financing', async (req, res) => {
 router.get('/financing-requests/:id', async (req, res) => {
   try {
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
@@ -228,7 +243,7 @@ router.get('/financing-requests/:id', async (req, res) => {
 router.get('/active-financings', async (req, res) => {
   try {
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
@@ -252,7 +267,7 @@ router.get('/active-financings', async (req, res) => {
 router.get('/pool-status', async (req, res) => {
   try {
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile || !profile.assignedPoolAddress) {
       return res.status(404).json({ message: 'No credit pool assigned' });
     }
@@ -277,23 +292,23 @@ router.get('/pool-status', async (req, res) => {
 router.get('/repayment-quote/:requestId', async (req, res) => {
   try {
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
     const result = await getRepaymentQuote(req.params.requestId);
-    
+
     if (!result.success) {
       return res.status(400).json({ message: result.error });
     }
-    
+
     // Verify the financing request belongs to this PSP
-    const financing =await FinancingRequest.findById(req.params.requestId);
+    const financing = await FinancingRequest.findById(req.params.requestId);
     if (!financing || financing.pspId.toString() !== profile._id.toString()) {
       return res.status(403).json({ message: 'Unauthorized access to this financing request' });
     }
-    
+
     res.json(result.quote);
   } catch (error) {
     console.error(error);
@@ -307,13 +322,13 @@ router.get('/repayment-quote/:requestId', async (req, res) => {
 router.post('/process-repayment', async (req, res) => {
   try {
     const { requestId, principalAmount, actualInterestPaid, txHash, blockNumber } = req.body;
-    
+
     const profile = await PSPProfile.findOne({ userId: req.user.userId });
-    
+
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
-    
+
     // Verify the financing request belongs to this PSP
     const financing = await FinancingRequest.findById(requestId);
     if (!financing || financing.pspId.toString() !== profile._id.toString()) {
@@ -333,11 +348,11 @@ router.post('/process-repayment', async (req, res) => {
       blockNumber,
       pspId: profile._id
     });
-    
+
     if (!result.success) {
       return res.status(400).json({ message: result.error });
     }
-    
+
     res.json({
       message: 'Repayment recorded successfully',
       financing: result.financing,

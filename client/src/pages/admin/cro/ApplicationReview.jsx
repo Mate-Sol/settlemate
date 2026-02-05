@@ -32,12 +32,14 @@ const ApplicationReview = () => {
       setLoading(true);
       const response = await croAPI.getApplication(id);
       setApplication(response.data);
-      
+
       // Pre-fill approval form with requested amounts
       setDecisionData(prev => ({
         ...prev,
         approvedAmount: response.data.requestedAmount || '',
-        approvedDuration: response.data.requestedDuration || ''
+        approvedDuration: response.data.requestedDuration || '',
+        walletAddress: response.data.walletAddress || '',
+        notes: response.data.notes || ''
       }));
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load application');
@@ -128,7 +130,7 @@ const ApplicationReview = () => {
           </div>
           <span className="text-xs text-white/60 mt-1 block">CRO Admin</span>
         </div>
-        
+
         <nav className="p-4 space-y-2">
           <a href="/admin/cro" className="sidebar-link">
             <Users className="w-5 h-5" />
@@ -145,7 +147,7 @@ const ApplicationReview = () => {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-          <button 
+          <button
             onClick={logout}
             className="sidebar-link w-full justify-start text-white/60 hover:text-white"
           >
@@ -160,7 +162,7 @@ const ApplicationReview = () => {
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <button 
+            <button
               onClick={() => navigate('/admin/cro')}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
             >
@@ -258,7 +260,7 @@ const ApplicationReview = () => {
                       <p className="text-sm text-gray-500">{doc.size}</p>
                     </div>
                   </div>
-                  <a 
+                  <a
                     href={doc.url}
                     className="flex items-center gap-2 text-brand-purple hover:underline"
                   >
@@ -272,21 +274,21 @@ const ApplicationReview = () => {
 
           {/* Decision Actions */}
           <div className="flex gap-4">
-            <button 
+            <button
               onClick={() => handleDecision('approve')}
               className="btn-brand flex items-center gap-2 flex-1"
             >
               <CheckCircle className="w-5 h-5" />
               Approve Application
             </button>
-            <button 
+            <button
               onClick={() => handleDecision('request-info')}
               className="btn-secondary flex items-center gap-2 flex-1"
             >
               <Clock className="w-5 h-5" />
               Request More Info
             </button>
-            <button 
+            <button
               onClick={() => handleDecision('reject')}
               className="px-6 py-3 rounded-lg font-semibold border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 flex-1"
             >
@@ -299,7 +301,7 @@ const ApplicationReview = () => {
 
       {/* Decision Modal */}
       {showDecisionModal && (
-        <DecisionModal 
+        <DecisionModal
           decision={decision}
           application={application}
           decisionData={decisionData}
@@ -355,7 +357,7 @@ const DecisionModal = ({ decision, application, decisionData, setDecisionData, s
           <div className={`w-16 h-16 ${config.bgColor} rounded-full flex items-center justify-center mx-auto mb-4`}>
             {config.icon}
           </div>
-          
+
           <h2 className="text-xl font-bold text-center mb-2">{config.title}</h2>
           <p className="text-center text-gray-600 mb-2">{application.companyName}</p>
           <p className="text-center text-sm text-gray-500 mb-6">{config.message}</p>
@@ -417,14 +419,14 @@ const DecisionModal = ({ decision, application, decisionData, setDecisionData, s
           </div>
 
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={onClose}
               disabled={submitting}
               className="btn-secondary flex-1"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={onConfirm}
               disabled={submitting || (decision === 'approve' && (!decisionData.walletAddress || !decisionData.approvedAmount)) || (decision !== 'approve' && !decisionData.notes)}
               className={`${config.buttonClass} text-white px-6 py-3 rounded-lg font-semibold transition-all flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}

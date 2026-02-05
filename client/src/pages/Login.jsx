@@ -27,7 +27,16 @@ const Login = () => {
         CRO: '/admin/cro',
         CFO: '/admin/cfo',
       };
-      const redirectTo = location.state?.from?.pathname || roleRedirects[result.user.role] || '/';
+      let redirectTo = location.state?.from?.pathname;
+
+      if (!redirectTo) {
+        if (result.user.role === 'PSP' && (result.user.creditLineStatus === 'NeedMoreInfo' || result.user.isExpired)) {
+          redirectTo = '/psp/onboarding';
+        } else {
+          redirectTo = roleRedirects[result.user.role] || '/';
+        }
+      }
+
       navigate(redirectTo, { replace: true });
     } else {
       setError(result.error);
