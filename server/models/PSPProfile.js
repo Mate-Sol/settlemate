@@ -1,15 +1,15 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const pspProfileSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: "User",
+    required: true,
   },
   // Company Information
   companyName: {
     type: String,
-    required: true
+    required: true,
   },
   registrationNo: String,
   country: String,
@@ -17,18 +17,18 @@ const pspProfileSchema = new mongoose.Schema({
   keyContact: {
     name: String,
     email: String,
-    phone: String
+    phone: String,
   },
   uboDetails: String,
   pepExposure: Boolean,
-  
+
   // Business Operations
   sector: String,
   keyProducts: [String],
   topCustomers: [String],
   topSuppliers: [String],
   transactionVolume: String,
-  
+
   // Financial Information
   annualRevenue: Number,
   outstandingLoans: Number,
@@ -40,73 +40,83 @@ const pspProfileSchema = new mongoose.Schema({
   profitMargin: Number,
   monthlyCashFlow: Number,
   defaultHistory: String,
-  
+
   // KYC Documents
-  kycDocuments: [{
-    name: String,
-    url: String,
-    uploadedAt: { type: Date, default: Date.now }
-  }],
-  
+  kycDocuments: [
+    {
+      name: String,
+      url: String,
+      uploadedAt: { type: Date, default: Date.now },
+    },
+  ],
+
   // Approved credit line details
   approvedAmount: {
     type: Number,
-    default: 0
+    default: 0,
   },
   currentlyUtilized: {
     type: Number,
     default: 0,
-    min: 0
+    min: 0,
   },
   creditLineStatus: {
     type: String,
-    enum: ['Pending', 'Approved', 'Rejected', 'Active', 'Suspended', 'None'],
-    default: 'None'
+    enum: [
+      "Pending",
+      "Approved",
+      "Rejected",
+      "UnderReview",
+      "Active",
+      "Suspended",
+      "None",
+    ],
+    default: "None",
   },
   requestedAmount: Number,
   requestedDuration: Number,
-  
+
   // Approved Credit Line
   approvedDuration: Number,
   utilizedBips: Number,
   unutilizedBips: Number,
-  
+
   // Blockchain Integration
   walletAddress: String,
-  assignedPoolAddress: String,  // Deployed CreditLinePool contract address
-  
+  assignedPoolAddress: String, // Deployed CreditLinePool contract address
+
   // Credit Maintenance Charges (Weekly)
   lastMaintenanceChargeDate: {
     type: Date,
-    default: null
+    default: null,
   },
   maintenanceChargeFrequency: {
     type: String,
-    enum: ['weekly', 'monthly'],
-    default: 'weekly'
+    enum: ["weekly", "monthly"],
+    default: "weekly",
   },
   accumulatedMaintenanceFee: {
     type: Number,
-    default: 0
+    default: 0,
   },
   nextMaintenanceDueDate: {
     type: Date,
-    default: null
+    default: null,
   },
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 // Update timestamp on save
-pspProfileSchema.pre('save', function(next) {
+pspProfileSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
-module.exports = mongoose.model('PSPProfile', pspProfileSchema);
+module.exports = mongoose.model("PSPProfile", pspProfileSchema);
