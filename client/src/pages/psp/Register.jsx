@@ -12,7 +12,6 @@ const Register = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-
   const [formData, setFormData] = useState({
     // Auth credentials (collected in first step)
     email: '',
@@ -51,6 +50,8 @@ const Register = () => {
     hasDefaultHistory: false,
     defaultDetails: '',
   });
+
+
 
   const stepTitles = ['Company Info', 'Business', 'Financial'];
   const totalSteps = stepTitles.length;

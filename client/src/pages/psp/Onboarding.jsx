@@ -52,6 +52,8 @@ const Onboarding = () => {
     rolledOutCreditLines: '',
     walletAddress: ''
   });
+  console.log(formData);
+
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -120,7 +122,7 @@ const Onboarding = () => {
           email: formData.contactEmail,
           phone: formData.contactPhone
         },
-        uboDetails: formData.uboName,
+        uboDetails: formData.uboName.replace(/\d+/, formData.uboOwnership),
         pepExposure: formData.isPEP,
         sector: formData.sector,
         transactionVolume: formData.transactionVolume,

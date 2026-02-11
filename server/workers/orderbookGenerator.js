@@ -60,14 +60,14 @@ function randomInRange(min, max) {
  */
 function generateRealisticAmount() {
   // 70% chance of "round" amounts (multiples of 5000)
-  if (Math.random() < 0.7) {
-    const roundBase = randomInRange(4, 20); // 20,000 to 100,000 in 5000 increments
-    return roundBase * 5000;
-  }
-  
+  // if (Math.random() < 0.7) {
+  //   const roundBase = randomInRange(4, 20); // 20,000 to 100,000 in 5000 increments
+  //   return roundBase * 5000;
+  // }
+
   // 30% chance of more "random" amounts
-  const baseAmount = randomInRange(20000, 100000);
-  
+  const baseAmount = randomInRange(5000, 10000);
+
   // Make it look more realistic by rounding to nearest 100
   return Math.round(baseAmount / 100) * 100;
 }
@@ -88,7 +88,7 @@ function generateEmail(name) {
   const [first, last] = name.toLowerCase().split(' ');
   const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'company.com', 'business.com'];
   const domain = domains[randomInRange(0, domains.length - 1)];
-  
+
   // Various formats for more realism
   const formats = [
     `${first}.${last}@${domain}`,
@@ -96,7 +96,7 @@ function generateEmail(name) {
     `${first[0]}${last}@${domain}`,
     `${first}_${last}@${domain}`
   ];
-  
+
   return formats[randomInRange(0, formats.length - 1)];
 }
 
@@ -147,7 +147,7 @@ async function generateSingleOrder(userId) {
     const customerName = generateCustomerName();
     const amount = generateRealisticAmount();
     const serviceType = serviceTypes[randomInRange(0, serviceTypes.length - 1)];
-    
+
     const orderData = {
       externalPspUserId: userId,
       orderReference: generateOrderReference(),
@@ -167,7 +167,7 @@ async function generateSingleOrder(userId) {
     await order.save();
 
     console.log(`[Orderbook Generator] Created order ${order.orderReference} for $${amount.toLocaleString()}`);
-    
+
     return order;
   } catch (error) {
     console.error('[Orderbook Generator] Error creating order:', error.message);
@@ -183,28 +183,25 @@ async function generateSingleOrder(userId) {
 async function generateOrderbookEntry() {
   try {
     console.log('[Orderbook Generator] Generating new orderbook entry...');
-    
+
     // Target specific user: psp@credmate.com (Acme)
-    const targetUserId = '698067e30704b78846b57b8b';
-    
-    // Get the specific user
-    const user = await ExternalPSPUser.findById(targetUserId);
-    
+    const user = await ExternalPSPUser.findOne({ email: '11feb@maildrop.cc' });
+
     if (!user) {
       console.log(`[Orderbook Generator] Target user not found (ID: ${targetUserId})`);
       console.log('[Orderbook Generator] Looking for user by email: psp@credmate.com');
-      
+
       // Fallback: try to find by email
-      const userByEmail = await ExternalPSPUser.findOne({ email: 'psp@credmate.com' });
-      
+      const userByEmail = await ExternalPSPUser.findOne({ email: '11feb@maildrop.cc' });
+
       if (!userByEmail) {
         console.log('[Orderbook Generator] User psp@credmate.com not found in database');
         return { success: false, message: 'Target user not found' };
       }
-      
+
       console.log(`[Orderbook Generator] Found user by email: ${userByEmail.companyName}`);
       const order = await generateSingleOrder(userByEmail._id);
-      
+
       return {
         success: true,
         order: {
@@ -215,10 +212,10 @@ async function generateOrderbookEntry() {
         }
       };
     }
-    
+
     console.log(`[Orderbook Generator] Creating order for: ${user.companyName} (${user.email})`);
     const order = await generateSingleOrder(user._id);
-    
+
     return {
       success: true,
       order: {
@@ -249,15 +246,15 @@ function startOrderbookScheduler() {
   }
 
   console.log('[Orderbook Generator] Starting orderbook scheduler (15 second interval)');
-  
+
   // Run immediately on start
   generateOrderbookEntry();
-  
+
   // Then run every 15 seconds
   schedulerInterval = setInterval(() => {
     generateOrderbookEntry();
   }, 15000); // 15 seconds = 15000 milliseconds
-  
+
   console.log('[Orderbook Generator] Scheduler started successfully');
 }
 

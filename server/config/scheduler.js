@@ -26,7 +26,7 @@ function scheduleDailyMaintenance() {
     scheduled: true,
     timezone: "Asia/Karachi" // Adjust to your timezone
   });
-  
+
   console.log('[Scheduler] Daily maintenance job scheduled (runs at midnight)');
 }
 
@@ -48,7 +48,7 @@ function scheduleOverdueChecking() {
     scheduled: true,
     timezone: "Asia/Karachi"
   });
-  
+
   console.log('[Scheduler] Overdue checking job scheduled (runs at noon)');
 }
 
@@ -57,13 +57,13 @@ function scheduleOverdueChecking() {
  */
 function initializeScheduledJobs() {
   console.log('[Scheduler] Initializing scheduled jobs...');
-  
+
   scheduleDailyMaintenance();
   scheduleOverdueChecking();
-  
+
   // Start orderbook generator for external PSP
   // startOrderbookScheduler();
-  
+
   console.log('[Scheduler] All jobs initialized successfully');
 }
 

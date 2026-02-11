@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, TrendingUp, DollarSign, Calendar, Upload, FileText, CheckCircle, X, Loader2, AlertCircle, LogOut } from 'lucide-react';
+import { CreditCard, TrendingUp, DollarSign, Calendar, Upload, FileText, CheckCircle, X, Loader2, AlertCircle, LogOut, UserPlus } from 'lucide-react';
 import { pspAPI } from '../../services/api';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
 const ApplyFinancingLimit = () => {
@@ -98,10 +98,10 @@ const ApplyFinancingLimit = () => {
             Status: Under Review
           </div>
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/psp/dashboard')}
             className="btn-brand"
           >
-            Go to Login
+            Go to Dashboard
           </button>
         </div>
       </div>
