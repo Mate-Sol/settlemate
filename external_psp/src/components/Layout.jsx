@@ -134,7 +134,7 @@ const Layout = ({ children }) => {
                 {/* Footer */}
                 <footer className="bg-dark-900 border-t border-dark-700 p-4">
                     <div className="text-center text-dark-400 text-sm">
-                        <p>External PSP Portal © 2024 - Integrated with CredMate</p>
+                        <p>External PSP Portal © 2026 - Integrated with CredMate</p>
                     </div>
                 </footer>
             </div>
