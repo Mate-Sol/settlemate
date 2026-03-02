@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { pspAPI } from '../../services/api';
 import OnboardingLayout from '../../layouts/OnboardingLayout';
 import CompanyInfo from './onboarding/CompanyInfo';
 import BusinessOperations from './onboarding/BusinessOperations';
 import FinancialInfo from './onboarding/FinancialInfo';
+import RiskLegalInfo from './onboarding/RiskLegalInfo';
 
 const Register = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, user: authUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    // Auth credentials (collected in first step)
+    // Auth credentials
     email: '',
     password: '',
     name: '',
@@ -49,51 +51,92 @@ const Register = () => {
     walletAddress: '',
     hasDefaultHistory: false,
     defaultDetails: '',
+
+    // Documents (stored as { docKey: { category, name, fileContent, fileType, fileSize } })
+    documents: {}
   });
 
-
-
-  const stepTitles = ['Company Info', 'Business', 'Financial'];
+  const stepTitles = ['Company Info', 'Business', 'Financial', 'Risk & Legal'];
   const totalSteps = stepTitles.length;
 
   const updateFormData = (stepData) => {
     setFormData(prev => ({ ...prev, ...stepData }));
   };
 
+  const uploadStepDocuments = async (docKeys) => {
+    const uploadPromises = docKeys
+      .filter(key => formData.documents[key])
+      .map(key => pspAPI.uploadDocument(formData.documents[key]));
+
+    if (uploadPromises.length > 0) {
+      await Promise.all(uploadPromises);
+    }
+  };
+
   const handleNext = async () => {
-    if (currentStep < totalSteps - 1) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      // Final submission
-      setIsSubmitting(true);
-      setError('');
-      try {
-        // Register user with backend - send ALL form data
-        const result = await register({
-          // Auth credentials
-          email: formData.contactEmail || formData.email,
-          password: formData.password || 'demo123', // User should set this in CompanyInfo step
-          name: formData.contactName || formData.companyName,
+    setIsSubmitting(true);
+    setError('');
 
-          // Company info
-          companyName: formData.companyName,
-          registrationNo: formData.registrationNo,
-          country: formData.country,
-          yearEstablished: formData.yearEstablished,
-          contactName: formData.contactName,
-          contactEmail: formData.contactEmail,
-          contactPhone: formData.contactPhone,
-          uboDetails: `${formData.uboName} - ${formData.uboOwnership}% ownership`,
-          pepExposure: formData.isPEP,
+    try {
+      if (currentStep === 0) {
+        // Step 1: Register User and Profile
+        if (!authUser) {
+          const result = await register({
+            email: formData.contactEmail || formData.email,
+            password: formData.password || 'demo123',
+            name: formData.contactName || formData.companyName,
+            companyName: formData.companyName,
+            registrationNo: formData.registrationNo,
+            country: formData.country,
+            yearEstablished: formData.yearEstablished,
+            contactName: formData.contactName,
+            contactEmail: formData.contactEmail,
+            contactPhone: formData.contactPhone,
+            uboDetails: `${formData.uboName} - ${formData.uboOwnership}% ownership`,
+            pepExposure: formData.isPEP,
+          });
 
-          // Business operations
+          if (!result.success) {
+            throw new Error(result.error || 'Registration failed');
+          }
+        } else {
+          // If already registered (e.g., clicked back and then next), just update profile
+          await pspAPI.updateProfile({
+            companyName: formData.companyName,
+            registrationNo: formData.registrationNo,
+            country: formData.country,
+            yearEstablished: formData.yearEstablished,
+            keyContact: {
+              name: formData.contactName,
+              email: formData.contactEmail,
+              phone: formData.contactPhone
+            },
+            uboDetails: `${formData.uboName} - ${formData.uboOwnership}% ownership`,
+            pepExposure: formData.isPEP,
+          });
+        }
+
+        // Upload Step 1 documents
+        await uploadStepDocuments(['tradeLicense', 'moaAoa', 'uboPassports', 'vatCert', 'regulatoryLicense']);
+
+        setCurrentStep(1);
+      } else if (currentStep === 1) {
+        // Step 2: Business Operations
+        await pspAPI.updateProfile({
           sector: formData.sector,
           transactionVolume: formData.transactionVolume,
           keyProducts: formData.products.filter(p => p.trim() !== ''),
           topCustomers: formData.customers.filter(c => c.trim() !== ''),
           topSuppliers: formData.suppliers.filter(s => s.trim() !== ''),
+        });
 
-          // Financial info
+        // Upload Step 2 documents
+        await uploadStepDocuments(['settlementReports', 'ageingAnalysis']);
+
+        setCurrentStep(2);
+      } else if (currentStep === 2) {
+        // Step 3: Financial Info
+        await pspAPI.updateProfile({
           annualRevenue: formData.annualRevenue,
           projectedRevenue: formData.projectedRevenue,
           profitMargin: formData.profitMargin,
@@ -105,18 +148,25 @@ const Register = () => {
           defaultHistory: formData.hasDefaultHistory ? formData.defaultDetails : 'No default history'
         });
 
-        if (result.success) {
-          // Redirect to apply financing limit after successful registration
-          navigate('/psp/apply-limit');
-        } else {
-          setError(result.error || 'Registration failed');
-          setIsSubmitting(false);
-        }
-      } catch (error) {
-        console.error('Registration failed:', error);
-        setError('Registration failed. Please try again.');
-        setIsSubmitting(false);
+        // Upload Step 3 documents
+        await uploadStepDocuments(['bankStatements', 'auditedFinancials', 'managementAccounts', 'cashFlowStatements']);
+
+        setCurrentStep(3);
+      } else if (currentStep === 3) {
+        // Step 4: Risk & Legal
+        // Risk & Legal currently only has documents, but we could add more profile fields here if needed
+
+        // Upload Step 4 documents
+        await uploadStepDocuments(['debtAgreements', 'liensPledges', 'flowOfFunds']);
+
+        // Finalize
+        navigate('/psp/apply-limit');
       }
+    } catch (err) {
+      console.error('Step processing failed:', err);
+      setError(err.message || 'Processing failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -134,6 +184,8 @@ const Register = () => {
         return <BusinessOperations data={formData} onChange={updateFormData} />;
       case 2:
         return <FinancialInfo data={formData} onChange={updateFormData} />;
+      case 3:
+        return <RiskLegalInfo data={formData} onChange={updateFormData} />;
       default:
         return null;
     }
@@ -149,6 +201,11 @@ const Register = () => {
       isLastStep={currentStep === totalSteps - 1}
       isSubmitting={isSubmitting}
     >
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm flex items-center gap-2">
+          <span>{error}</span>
+        </div>
+      )}
       {renderStep()}
     </OnboardingLayout>
   );

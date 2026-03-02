@@ -9,8 +9,9 @@ const OnboardingLayout = ({ children, currentStep, totalSteps, stepTitles, onNex
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CreditCard className="w-8 h-8 text-brand-purple" />
-            <span className="text-xl font-bold text-gradient">CredMate</span>
+            <img src="https://beta.invoicemate.net/logo/CredMateLogoHorizontal.png" className="h-14 w-auto" alt="" srcset="" />
+            {/* <CreditCard className="w-8 h-8 text-brand-purple" />
+            <span className="text-xl font-bold text-gradient">CredMate</span> */}
           </div>
           <span className="text-sm text-gray-500">PSP Registration</span>
         </div>

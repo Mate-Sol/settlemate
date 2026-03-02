@@ -57,12 +57,13 @@ export const pspAPI = {
   processRepayment: (data) => api.post('/psp/process-repayment', data),
   getPoolStatus: () => api.get('/psp/pool-status'),
   getCreditLineExpiry: () => api.get('/psp/credit-line-expiry'),
-  
+
   // Maintenance fee endpoints
   getCurrentMaintenanceCharge: () => api.get('/psp/maintenance/current'),
   getMaintenanceSummary: () => api.get('/psp/maintenance/summary'),
   getMaintenanceCharges: () => api.get('/psp/maintenance/charges'),
   payMaintenanceFee: (chargeId, data) => api.post(`/psp/maintenance/pay/${chargeId}`, data),
+  uploadDocument: (data) => api.post('/psp/upload-document', data),
 };
 
 // CRO endpoints

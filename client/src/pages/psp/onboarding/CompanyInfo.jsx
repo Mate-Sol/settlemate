@@ -1,4 +1,5 @@
-import { Building2, User, FileText, AlertTriangle } from 'lucide-react';
+import { Building2, User, FileText, AlertTriangle, ShieldCheck } from 'lucide-react';
+import FileUploadField from '../../../components/common/FileUploadField';
 
 const CompanyInfo = ({ data, onChange }) => {
   const handleChange = (field) => (e) => {
@@ -7,6 +8,11 @@ const CompanyInfo = ({ data, onChange }) => {
 
   const handleCheckboxChange = (field) => (e) => {
     onChange({ ...data, [field]: e.target.checked });
+  };
+
+  const handleFileChange = (docName) => (fileData) => {
+    const updatedDocuments = { ...(data.documents || {}), [docName]: fileData };
+    onChange({ ...data, documents: updatedDocuments });
   };
 
   return (
@@ -189,6 +195,51 @@ const CompanyInfo = ({ data, onChange }) => {
             </p>
           </div>
         </label>
+      </div>
+
+      <hr className="my-6" />
+
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-brand-purple/10 rounded-lg flex items-center justify-center">
+          <ShieldCheck className="w-6 h-6 text-brand-purple" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold">Company Identity & Legal Documents</h3>
+          <p className="text-gray-500 text-sm">Upload required legal documentation</p>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <FileUploadField
+          label="Trade License / Commercial Registration *"
+          category="Company Identity & Legal"
+          onUpload={handleFileChange('tradeLicense')}
+          existingFile={data.documents?.tradeLicense?.name}
+        />
+        <FileUploadField
+          label="MOA / AOA *"
+          category="Company Identity & Legal"
+          onUpload={handleFileChange('moaAoa')}
+          existingFile={data.documents?.moaAoa?.name}
+        />
+        <FileUploadField
+          label="Passport/Emirates ID of all UBOs *"
+          category="Company Identity & Legal"
+          onUpload={handleFileChange('uboPassports')}
+          existingFile={data.documents?.uboPassports?.name}
+        />
+        <FileUploadField
+          label="VAT Certificate & Filing (if applicable)"
+          category="Company Identity & Legal"
+          onUpload={handleFileChange('vatCert')}
+          existingFile={data.documents?.vatCert?.name}
+        />
+        <FileUploadField
+          label="Regulatory license *"
+          category="Company Identity & Legal"
+          onUpload={handleFileChange('regulatoryLicense')}
+          existingFile={data.documents?.regulatoryLicense?.name}
+        />
       </div>
     </div>
   );

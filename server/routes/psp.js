@@ -4,6 +4,7 @@ const { authMiddleware, authorizeRoles } = require('../middleware/auth');
 const PSPProfile = require('../models/PSPProfile');
 const OrderBook = require('../models/OrderBook');
 const FinancingRequest = require('../models/FinancingRequest');
+const FinancingDocument = require('../models/FinancingDocument');
 const User = require('../models/User');
 const { financingValidationAgent } = require('../workers/financingValidationAgent');
 const { getRepaymentQuote, processRepayment } = require('../workers/repaymentAgent');
@@ -11,6 +12,48 @@ const { getRepaymentQuote, processRepayment } = require('../workers/repaymentAge
 // Apply authentication to all PSP routes
 router.use(authMiddleware);
 router.use(authorizeRoles('PSP'));
+
+// @route   POST /api/psp/upload-document
+// @desc    Upload a document (Base64)
+// @access  Private (PSP)
+router.post('/upload-document', async (req, res) => {
+  try {
+    const { category, name, fileContent, fileType, fileSize } = req.body;
+
+    // Validate file size (5MB = 5 * 1024 * 1024 bytes)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    const actualSize = fileSize || (fileContent.length * 0.75);
+
+    if (actualSize > MAX_SIZE) {
+      return res.status(400).json({ message: 'File size exceeds 5MB limit' });
+    }
+
+    const profile = await PSPProfile.findOne({ userId: req.user.userId });
+    if (!profile) {
+      return res.status(404).json({ message: 'PSP Profile not found' });
+    }
+
+    const document = new FinancingDocument({
+      pspId: profile._id,
+      category,
+      name,
+      fileContent,
+      fileType,
+      fileSize: actualSize
+    });
+
+    await document.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Document uploaded successfully',
+      documentId: document._id
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // @route   GET /api/psp/profile
 // @desc    Get PSP profile

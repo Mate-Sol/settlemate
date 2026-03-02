@@ -1,4 +1,5 @@
-import { DollarSign, TrendingUp, Building, AlertCircle } from 'lucide-react';
+import { DollarSign, TrendingUp, Building, AlertCircle, Landmark } from 'lucide-react';
+import FileUploadField from '../../../components/common/FileUploadField';
 
 const FinancialInfo = ({ data, onChange }) => {
   const handleChange = (field) => (e) => {
@@ -7,6 +8,11 @@ const FinancialInfo = ({ data, onChange }) => {
 
   const handleCheckboxChange = (field) => (e) => {
     onChange({ ...data, [field]: e.target.checked });
+  };
+
+  const handleFileChange = (docName) => (fileData) => {
+    const updatedDocuments = { ...(data.documents || {}), [docName]: fileData };
+    onChange({ ...data, documents: updatedDocuments });
   };
 
   return (
@@ -187,6 +193,45 @@ const FinancialInfo = ({ data, onChange }) => {
         </div>
       )}
 
+      <hr className="my-6" />
+
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-brand-purple/10 rounded-lg flex items-center justify-center">
+          <Landmark className="w-6 h-6 text-brand-purple" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold">Financials & Banking Documents</h3>
+          <p className="text-gray-500 text-sm">Upload corporate financial records</p>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <FileUploadField
+          label="Latest 6 months bank statements *"
+          category="Financials & Banking"
+          onUpload={handleFileChange('bankStatements')}
+          existingFile={data.documents?.bankStatements?.name}
+        />
+        <FileUploadField
+          label="Audited financial statements (last 2 years)"
+          category="Financials & Banking"
+          onUpload={handleFileChange('auditedFinancials')}
+          existingFile={data.documents?.auditedFinancials?.name}
+        />
+        <FileUploadField
+          label="Management Accounts (YTD) *"
+          category="Financials & Banking"
+          onUpload={handleFileChange('managementAccounts')}
+          existingFile={data.documents?.managementAccounts?.name}
+        />
+        <FileUploadField
+          label="Cash flow statements (last 6 months) *"
+          category="Financials & Banking"
+          onUpload={handleFileChange('cashFlowStatements')}
+          existingFile={data.documents?.cashFlowStatements?.name}
+        />
+      </div>
+
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mt-6">
         <p className="text-sm text-blue-800">
           <strong>Note:</strong> All financial information provided will be verified during the credit assessment process.
@@ -196,5 +241,4 @@ const FinancialInfo = ({ data, onChange }) => {
     </div>
   );
 };
-
 export default FinancialInfo;

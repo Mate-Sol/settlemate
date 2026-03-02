@@ -1,9 +1,15 @@
-import { Briefcase, Package, Users, Truck, Plus, X } from 'lucide-react';
+import { Briefcase, Package, Users, Truck, Plus, X, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
+import FileUploadField from '../../../components/common/FileUploadField';
 
 const BusinessOperations = ({ data, onChange }) => {
   const handleChange = (field) => (e) => {
     onChange({ ...data, [field]: e.target.value });
+  };
+
+  const handleFileChange = (docName) => (fileData) => {
+    const updatedDocuments = { ...(data.documents || {}), [docName]: fileData };
+    onChange({ ...data, documents: updatedDocuments });
   };
 
   const addItem = (field) => {
@@ -103,7 +109,7 @@ const BusinessOperations = ({ data, onChange }) => {
               className="input-field flex-1"
               placeholder={`Product/Service ${index + 1}`}
             />
-            {(data.products || []).length > 1 && (
+            {index > 0 && (
               <button
                 type="button"
                 onClick={() => removeItem('products', index)}
@@ -144,7 +150,7 @@ const BusinessOperations = ({ data, onChange }) => {
               className="input-field flex-1"
               placeholder={`Customer ${index + 1}`}
             />
-            {(data.customers || []).length > 1 && (
+            {index > 0 && (
               <button
                 type="button"
                 onClick={() => removeItem('customers', index)}
@@ -185,7 +191,7 @@ const BusinessOperations = ({ data, onChange }) => {
               className="input-field flex-1"
               placeholder={`Supplier ${index + 1}`}
             />
-            {(data.suppliers || []).length > 1 && (
+            {index > 0 && (
               <button
                 type="button"
                 onClick={() => removeItem('suppliers', index)}
@@ -206,6 +212,33 @@ const BusinessOperations = ({ data, onChange }) => {
             Add Supplier
           </button>
         )}
+      </div>
+
+      <hr className="my-6" />
+
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-brand-purple/10 rounded-lg flex items-center justify-center">
+          <BarChart3 className="w-6 h-6 text-brand-purple" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold">Operational Settlement Data</h3>
+          <p className="text-gray-500 text-sm">Upload documentation for business operations</p>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <FileUploadField
+          label="Daily settlement volume reports (last 6 months) *"
+          category="Operational Settlement Data"
+          onUpload={handleFileChange('settlementReports')}
+          existingFile={data.documents?.settlementReports?.name}
+        />
+        <FileUploadField
+          label="Ageing analysis of payables/receivables *"
+          category="Operational Settlement Data"
+          onUpload={handleFileChange('ageingAnalysis')}
+          existingFile={data.documents?.ageingAnalysis?.name}
+        />
       </div>
     </div>
   );

@@ -236,67 +236,8 @@ const ApplyFinancingLimit = () => {
 
               <hr className="my-6" />
 
-              <h3 className="font-semibold flex items-center gap-2">
-                <Upload className="w-5 h-5 text-brand-purple" />
-                Required Documents
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">
-                Please upload the following documents for KYC verification
-              </p>
-
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <div className="p-3 bg-gray-50 rounded-lg text-sm">
-                  <span className="font-medium">• Certificate of Incorporation</span>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg text-sm">
-                  <span className="font-medium">• Latest Financial Statements</span>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg text-sm">
-                  <span className="font-medium">• Bank Statements (6 months)</span>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg text-sm">
-                  <span className="font-medium">• Director ID Documents</span>
-                </div>
-              </div>
-
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-brand-purple transition-colors">
-                <input
-                  type="file"
-                  id="file-upload"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-medium">Click to upload or drag and drop</p>
-                  <p className="text-sm text-gray-400 mt-1">PDF, DOC, or images (max 10MB each)</p>
-                </label>
-              </div>
-
-              {uploadedFiles.length > 0 && (
-                <div className="space-y-2 mt-4">
-                  {uploadedFiles.map(file => (
-                    <div key={file.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-brand-purple" />
-                        <div>
-                          <p className="text-sm font-medium">{file.name}</p>
-                          <p className="text-xs text-gray-500">{file.size}</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(file.id)}
-                        className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              
+              
 
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">

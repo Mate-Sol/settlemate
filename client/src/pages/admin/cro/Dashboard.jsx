@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { CreditCard, Users, FileCheck, AlertTriangle, LogOut, Eye, Loader2 } from 'lucide-react';
 import { croAPI } from '../../../services/api';
+import moment from 'moment';
 
 const CRODashboard = () => {
   const { user, logout } = useAuth();
@@ -22,7 +23,7 @@ const CRODashboard = () => {
         croAPI.getApplications(''),
         croAPI.getStats()
       ]);
-      
+
       setApplications(appsResponse.data);
       setStats(statsResponse.data);
     } catch (err) {
@@ -38,12 +39,11 @@ const CRODashboard = () => {
       <aside className="sidebar">
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <CreditCard className="w-8 h-8" />
-            <span className="text-xl font-bold">CredMate</span>
+            <img src={"/logo-white.png"} alt="logo" className='h-20 w-auto' />
           </div>
           <span className="text-xs text-white/60 mt-1 block">CRO Admin</span>
         </div>
-        
+
         <nav className="p-4 space-y-2">
           <a href="/admin/cro" className="sidebar-link active">
             <Users className="w-5 h-5" />
@@ -60,7 +60,7 @@ const CRODashboard = () => {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
-          <button 
+          <button
             onClick={logout}
             className="sidebar-link w-full justify-start text-white/60 hover:text-white"
           >
@@ -92,7 +92,7 @@ const CRODashboard = () => {
               <span className="stats-label">Rejected Applications</span>
               <span className="stats-value text-gradient">{stats?.rejectedApplications}</span>
             </div>
-           
+
           </div>
 
           {/* Pending Applications Table */}
@@ -114,13 +114,16 @@ const CRODashboard = () => {
                 {applications.map((app) => (
                   <tr key={app.id} className="table-row">
                     <td className="table-cell font-medium">{app.companyName}</td>
-                    <td className="table-cell">{app.requestedAmount}</td>
-                    <td className="table-cell">{app.createdAt}</td>
+                    <td className="table-cell">${app?.requestedAmount?.toLocaleString({
+                      style: 'currency',
+                      currency: 'USD'
+                    })}</td>
+                    <td className="table-cell">{moment(app.createdAt).format("ll")}</td>
                     <td className="table-cell">
                       <span className="badge badge-warning">{app.creditLineStatus}</span>
                     </td>
                     <td className="table-cell">
-                      <button 
+                      <button
                         onClick={() => navigate(`/admin/cro/application/${app._id}`)}
                         className="flex items-center gap-2 px-4 py-2 text-brand-purple hover:bg-brand-purple hover:text-white rounded-lg transition-colors font-medium"
                       >
