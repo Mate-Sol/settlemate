@@ -44,9 +44,8 @@ const YieldReports = () => {
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <CreditCard className="w-8 h-8" />
-            <span className="text-xl font-bold">CredMate</span>
+           <div className="flex items-center gap-2">
+            <img src={"/logo-white.png"} alt="logo" className='h-20 ' />
           </div>
           <span className="text-xs text-white/60 mt-1 block">CFO Admin</span>
         </div>
