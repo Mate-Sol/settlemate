@@ -20,6 +20,10 @@ const financingDocumentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    documentType: {
+        type: String,
+        required: true
+    },
     fileContent: {
         type: String, // Store as Base64 string
         required: true

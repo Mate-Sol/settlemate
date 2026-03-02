@@ -24,6 +24,7 @@ const FileUploadField = ({ label, onUpload, category, existingFile }) => {
             const base64 = await convertToBase64(selectedFile);
             const fileData = {
                 category,
+                documentType: label.replace(' *', '').replace(' (if applicable)', ''), // Clean label for storage
                 name: selectedFile.name,
                 fileContent: base64,
                 fileType: selectedFile.type,

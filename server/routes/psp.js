@@ -18,7 +18,7 @@ router.use(authorizeRoles('PSP'));
 // @access  Private (PSP)
 router.post('/upload-document', async (req, res) => {
   try {
-    const { category, name, fileContent, fileType, fileSize } = req.body;
+    const { category, documentType, name, fileContent, fileType, fileSize } = req.body;
 
     // Validate file size (5MB = 5 * 1024 * 1024 bytes)
     const MAX_SIZE = 5 * 1024 * 1024;
@@ -36,6 +36,7 @@ router.post('/upload-document', async (req, res) => {
     const document = new FinancingDocument({
       pspId: profile._id,
       category,
+      documentType,
       name,
       fileContent,
       fileType,
