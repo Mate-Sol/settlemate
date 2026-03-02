@@ -110,6 +110,29 @@ const pspProfileSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  // Credit Scoring
+  creditScoring: {
+    criteriaScores: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    },
+    totalScore: {
+      type: Number,
+      default: 0
+    },
+    percentage: {
+      type: Number,
+      default: 0
+    },
+    rating: {
+      type: String,
+      default: 'N/A'
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now,

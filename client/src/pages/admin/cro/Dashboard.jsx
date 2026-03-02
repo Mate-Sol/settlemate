@@ -53,10 +53,7 @@ const CRODashboard = () => {
             <FileCheck className="w-5 h-5" />
             Applications
           </a>
-          <a href="/admin/cro/overdue" className="sidebar-link">
-            <AlertTriangle className="w-5 h-5" />
-            Overdue
-          </a>
+
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">

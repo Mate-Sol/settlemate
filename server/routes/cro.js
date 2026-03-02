@@ -39,7 +39,39 @@ router.get('/applications/:id', async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
 
-    res.json(application);
+    // Fetch associated documents
+    const FinancingDocument = require('../models/FinancingDocument');
+    const documents = await FinancingDocument.find({ pspId: application._id })
+      .select('-fileContent'); // Exclude heavy content for list, will fetch separately if needed or include if small
+
+    // Convert to plain object to add documents
+    const appObj = application.toObject();
+    appObj.documents = documents;
+
+    res.json(appObj);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/cro/documents/:id
+// @desc    Get document content (base64)
+// @access  Private (CRO only)
+router.get('/documents/:id', async (req, res) => {
+  try {
+    const FinancingDocument = require('../models/FinancingDocument');
+    const document = await FinancingDocument.findById(req.params.id);
+
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+
+    res.json({
+      name: document.name,
+      fileType: document.fileType,
+      fileContent: document.fileContent
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
@@ -166,6 +198,39 @@ router.post('/applications/:id/request-info', async (req, res) => {
     await profile.save();
 
     res.json({ message: 'Additional information requested', profile });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/cro/applications/:id/score
+// @desc    Save/update credit scoring for an application
+// @access  Private (CRO only)
+router.post('/applications/:id/score', async (req, res) => {
+  try {
+    const { criteriaScores, totalScore, percentage, rating } = req.body;
+
+    const profile = await PSPProfile.findById(req.params.id);
+
+    if (!profile) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    profile.creditScoring = {
+      criteriaScores,
+      totalScore,
+      percentage,
+      rating,
+      updatedAt: Date.now()
+    };
+
+    // Explicitly mark as modified for Mixed type
+    profile.markModified('creditScoring');
+
+    await profile.save();
+
+    res.json({ message: 'Credit score updated successfully', profile });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
