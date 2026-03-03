@@ -231,13 +231,13 @@ const BusinessOperations = ({ data, onChange }) => {
           label="Daily settlement volume reports (last 6 months) *"
           category="Operational Settlement Data"
           onUpload={handleFileChange('settlementReports')}
-          existingFile={data.documents?.settlementReports?.name}
+          existingFile={data.documents?.settlementReports?.name || data.docData?.settlementReports?.name}
         />
         <FileUploadField
           label="Ageing analysis of payables/receivables *"
           category="Operational Settlement Data"
           onUpload={handleFileChange('ageingAnalysis')}
-          existingFile={data.documents?.ageingAnalysis?.name}
+          existingFile={data.documents?.ageingAnalysis?.name || data.docData?.ageingAnalysis?.name}
         />
       </div>
     </div>

@@ -67,9 +67,14 @@ router.get('/profile', async (req, res) => {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
-    // Convert to object to add isExpired
+    // Convert to object to add isExpired and documents
     const profileData = profile.toObject();
     profileData.isExpired = false;
+
+    // Fetch associated documents (metadata only)
+    const documents = await FinancingDocument.find({ pspId: profile._id })
+      .select('-fileContent');
+    profileData.documents = documents;
 
     if (profile.assignedPoolAddress) {
       const contractService = require('../services/contractService');

@@ -32,17 +32,18 @@ const RiskLegalInfo = ({ data, onChange }) => {
                         Debt & Facilities
                     </h3>
                     <div className="grid md:grid-cols-2 gap-6">
+
                         <FileUploadField
                             label="Existing debt/facility agreements"
                             category="Risk & Legal"
                             onUpload={handleFileChange('debtAgreements')}
-                            existingFile={data.documents?.debtAgreements?.name}
+                            existingFile={data.documents?.debtAgreements?.name || data.docData?.debtAgreements?.name}
                         />
                         <FileUploadField
                             label="Existing liens or pledges on receivables"
                             category="Risk & Legal"
                             onUpload={handleFileChange('liensPledges')}
-                            existingFile={data.documents?.liensPledges?.name}
+                            existingFile={data.documents?.liensPledges?.name || data.docData?.liensPledges?.name}
                         />
                     </div>
                 </div>
@@ -59,7 +60,7 @@ const RiskLegalInfo = ({ data, onChange }) => {
                             label="Flow of Funds *"
                             category="Risk & Legal"
                             onUpload={handleFileChange('flowOfFunds')}
-                            existingFile={data.documents?.flowOfFunds?.name}
+                            existingFile={data.documents?.flowOfFunds?.name || data.docData?.flowOfFunds?.name}
                         />
                     </div>
                 </div>

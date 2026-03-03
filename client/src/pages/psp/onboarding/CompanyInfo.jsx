@@ -214,31 +214,31 @@ const CompanyInfo = ({ data, onChange }) => {
           label="Trade License / Commercial Registration *"
           category="Company Identity & Legal"
           onUpload={handleFileChange('tradeLicense')}
-          existingFile={data.documents?.tradeLicense?.name}
+          existingFile={data.documents?.tradeLicense?.name || data.docData?.tradeLicense?.name}
         />
         <FileUploadField
           label="MOA / AOA *"
           category="Company Identity & Legal"
           onUpload={handleFileChange('moaAoa')}
-          existingFile={data.documents?.moaAoa?.name}
+          existingFile={data.documents?.moaAoa?.name || data.docData?.moaAoa?.name}
         />
         <FileUploadField
           label="Passport/Emirates ID of all UBOs *"
           category="Company Identity & Legal"
           onUpload={handleFileChange('uboPassports')}
-          existingFile={data.documents?.uboPassports?.name}
+          existingFile={data.documents?.uboPassports?.name || data.docData?.uboPassports?.name}
         />
         <FileUploadField
           label="VAT Certificate & Filing (if applicable)"
           category="Company Identity & Legal"
           onUpload={handleFileChange('vatCert')}
-          existingFile={data.documents?.vatCert?.name}
+          existingFile={data.documents?.vatCert?.name || data.docData?.vatCert?.name}
         />
         <FileUploadField
           label="Regulatory license *"
           category="Company Identity & Legal"
           onUpload={handleFileChange('regulatoryLicense')}
-          existingFile={data.documents?.regulatoryLicense?.name}
+          existingFile={data.documents?.regulatoryLicense?.name || data.docData?.regulatoryLicense?.name}
         />
       </div>
     </div>

@@ -210,25 +210,25 @@ const FinancialInfo = ({ data, onChange }) => {
           label="Latest 6 months bank statements *"
           category="Financials & Banking"
           onUpload={handleFileChange('bankStatements')}
-          existingFile={data.documents?.bankStatements?.name}
+          existingFile={data.documents?.bankStatements?.name || data.docData?.bankStatements?.name}
         />
         <FileUploadField
           label="Audited financial statements (last 2 years)"
           category="Financials & Banking"
           onUpload={handleFileChange('auditedFinancials')}
-          existingFile={data.documents?.auditedFinancials?.name}
+          existingFile={data.documents?.auditedFinancials?.name || data.docData?.auditedFinancials?.name}
         />
         <FileUploadField
           label="Management Accounts (YTD) *"
           category="Financials & Banking"
           onUpload={handleFileChange('managementAccounts')}
-          existingFile={data.documents?.managementAccounts?.name}
+          existingFile={data.documents?.managementAccounts?.name || data.docData?.managementAccounts?.name}
         />
         <FileUploadField
           label="Cash flow statements (last 6 months) *"
           category="Financials & Banking"
           onUpload={handleFileChange('cashFlowStatements')}
-          existingFile={data.documents?.cashFlowStatements?.name}
+          existingFile={data.documents?.cashFlowStatements?.name || data.docData?.cashFlowStatements?.name}
         />
       </div>
 
