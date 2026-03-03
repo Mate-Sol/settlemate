@@ -74,6 +74,7 @@ export const croAPI = {
   rejectApplication: (id, data) => api.post(`/cro/applications/${id}/reject`, data),
   requestInfo: (id, data) => api.post(`/cro/applications/${id}/request-info`, data),
   saveCreditScore: (id, data) => api.post(`/cro/applications/${id}/score`, data),
+  uploadApplicationDocument: (id, data) => api.post(`/cro/applications/${id}/upload-document`, data),
   getDocumentContent: (docId) => api.get(`/cro/documents/${docId}`),
   getStats: () => api.get('/cro/stats'),
 };

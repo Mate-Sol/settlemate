@@ -257,4 +257,41 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// @route   POST /api/cro/applications/:id/upload-document
+// @desc    Upload a document for an application (CRO)
+// @access  Private (CRO only)
+router.post('/applications/:id/upload-document', async (req, res) => {
+  try {
+    const { category, documentType, name, fileContent, fileType, fileSize } = req.body;
+
+    const profile = await PSPProfile.findById(req.params.id);
+    if (!profile) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    const FinancingDocument = require('../models/FinancingDocument');
+    const document = new FinancingDocument({
+      pspId: profile._id,
+      category: category || 'Credit Report', // Default category for CRO uploads
+      documentType: documentType || 'Review Report',
+      name,
+      fileContent,
+      fileType,
+      fileSize,
+      uploadedAt: Date.now()
+    });
+
+    await document.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Document uploaded successfully',
+      document
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { CreditCard, Users, FileCheck, AlertTriangle, LogOut, ArrowLeft, CheckCircle, Clock, XCircle, Building, DollarSign, Calendar, FileText, Download, Loader2 } from 'lucide-react';
+import { CreditCard, Users, FileCheck, AlertTriangle, LogOut, ArrowLeft, CheckCircle, Clock, XCircle, Building, DollarSign, Calendar, FileText, Download, Loader2, ShieldCheck, Package, TrendingUp, Landmark, ShieldCheckIcon, AlertCircle, Upload } from 'lucide-react';
 import { croAPI } from '../../../services/api';
 
 const ApplicationReview = () => {
@@ -16,12 +16,12 @@ const ApplicationReview = () => {
   const [application, setApplication] = useState(null);
   const [activeTab, setActiveTab] = useState('profile');
   console.log(application);
-  // Decision form data
   const [decisionData, setDecisionData] = useState({
     approvedAmount: '',
     approvedDuration: '',
     walletAddress: '',
-    notes: ''
+    notes: '',
+    reportFile: null
   });
 
   useEffect(() => {
@@ -78,6 +78,7 @@ const ApplicationReview = () => {
   };
 
   const formatCurrency = (amount) => {
+    if (amount === undefined || amount === null) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -96,6 +97,21 @@ const ApplicationReview = () => {
       setError(null);
 
       if (decision === 'approve') {
+        // Upload report if present
+        if (decisionData.reportFile) {
+          try {
+            await croAPI.uploadApplicationDocument(id, {
+              category: 'Credit Report',
+              documentType: 'Review Report & Contract',
+              ...decisionData.reportFile
+            });
+          } catch (uploadErr) {
+            console.error('Report upload failed:', uploadErr);
+            // We might want to warn the user but proceed or stop
+            throw new Error('Failed to upload credit report. Please try again.');
+          }
+        }
+
         await croAPI.approveApplication(id, {
           approvedAmount: parseFloat(decisionData.approvedAmount),
           approvedDuration: parseInt(decisionData.approvedDuration),
@@ -249,6 +265,35 @@ const ApplicationReview = () => {
                 </div>
               </div>
 
+              {/* Highlighted Report Section */}
+              {application?.documents?.some(doc => doc.category === 'Credit Report') && (
+                <div className="mb-6 p-4 bg-brand-purple/5 border border-brand-purple/20 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-brand-purple/10 rounded-full flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-brand-purple" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900">Application Review Report</h3>
+                      <p className="text-sm text-gray-500">The formal committee report and contractual terms for this application.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {application.documents
+                      .filter(doc => doc.category === 'Credit Report')
+                      .map(doc => (
+                        <button
+                          key={doc._id}
+                          onClick={() => handleDownloadDocument(doc._id, doc.name)}
+                          className="px-4 py-2 bg-white border border-brand-purple/30 text-brand-purple rounded-lg font-semibold text-sm hover:bg-brand-purple hover:text-white transition-all flex items-center gap-2"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download Report
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               {/* Company Information */}
               <div className="card mb-6">
                 <h2 className="text-lg font-semibold mb-4">Company Information</h2>
@@ -281,21 +326,162 @@ const ApplicationReview = () => {
               </div>
 
               {/* Contact Person */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="card">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-brand-purple" />
+                    Key Contact Person
+                  </h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Name</p>
+                      <p className="font-medium text-gray-900">{application.keyContact?.name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-medium text-gray-900">{application.keyContact?.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Phone</p>
+                      <p className="font-medium text-gray-900">{application.keyContact?.phone || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <ShieldCheckIcon className="w-5 h-5 text-brand-purple" />
+                    Ownership & Compliance
+                  </h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">UBO Details</p>
+                      <p className="font-medium text-gray-900">{application.uboDetails || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">PEP Exposure</p>
+                      {application.pepExposure ? (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-600 border border-red-200 inline-flex items-center gap-1 mt-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Yes (High Risk)
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-600 border border-green-200 inline-flex items-center gap-1 mt-1">
+                          <CheckCircle className="w-3 h-3" />
+                          No (Safe)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Business Ecosystem */}
               <div className="card mb-6">
-                <h2 className="text-lg font-semibold mb-4">Key Contact Person</h2>
-                <div className="grid md:grid-cols-2 gap-6">
+                <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-brand-purple" />
+                  Business Ecosystem
+                </h2>
+                <div className="grid md:grid-cols-3 gap-8">
                   <div>
-                    <p className="text-sm text-gray-500">Name</p>
-                    <p className="font-medium">{application.keyContact?.name || 'N/A'}</p>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Key Products/Services</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {application.keyProducts?.length > 0 ? (
+                        application.keyProducts.map((p, i) => (
+                          <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">{p}</span>
+                        ))
+                      ) : <span className="text-gray-400 italic text-xs">No data provided</span>}
+                    </div>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium">{application.keyContact?.email || 'N/A'}</p>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Top Customers</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {application.topCustomers?.length > 0 ? (
+                        application.topCustomers.map((c, i) => (
+                          <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">{c}</span>
+                        ))
+                      ) : <span className="text-gray-400 italic text-xs">No data provided</span>}
+                    </div>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Phone</p>
-                    <p className="font-medium">{application.keyContact?.phone || 'N/A'}</p>
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Top Suppliers</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {application.topSuppliers?.length > 0 ? (
+                        application.topSuppliers.map((s, i) => (
+                          <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-200">{s}</span>
+                        ))
+                      ) : <span className="text-gray-400 italic text-xs">No data provided</span>}
+                    </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Financial Metrics & Banking */}
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="card">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-brand-purple" />
+                    Financial Metrics
+                  </h2>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                      <span className="text-sm text-gray-500">Annual Revenue (Last Year)</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(application.annualRevenue)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                      <span className="text-sm text-gray-500">Projected Revenue (This Year)</span>
+                      <span className="font-bold text-brand-purple">{formatCurrency(application.projectedRevenue)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                      <span className="text-sm text-gray-500">Net Profit Margin</span>
+                      <span className="font-bold text-gray-900">{application.profitMargin}%</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm text-gray-500">Monthly Cash Flow</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(application.monthlyCashFlow)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Landmark className="w-5 h-5 text-brand-purple" />
+                    Banking & Infrastructure
+                  </h2>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                      <span className="text-sm text-gray-500">Primary Settlement Bank</span>
+                      <span className="font-bold text-gray-900">{application.primaryBank || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                      <span className="text-sm text-gray-500">Current Facility Allocation</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(application.currentAllocation)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
+                      <span className="text-sm text-gray-500">Other Rolled-out Credit Lines</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(application.rolledOutCreditLines)}</span>
+                    </div>
+                    <div className="py-2">
+                      <p className="text-sm text-gray-500 mb-1">Business Wallet Address</p>
+                      <p className="text-[10px] font-mono bg-gray-50 p-2 rounded border border-gray-100 break-all text-gray-600">
+                        {application.walletAddress || 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Risk Profile */}
+              <div className="card mb-6 border-l-4 border-l-brand-purple">
+                <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-brand-purple" />
+                  Risk Profile & History
+                </h2>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-500 mb-1">Default / Restructuring History</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {application.defaultHistory || 'No history reported.'}
+                  </p>
                 </div>
               </div>
 
@@ -352,29 +538,48 @@ const ApplicationReview = () => {
             <>
               <CreditScoringTab application={application} onUpdate={fetchApplication} />
               {/* Decision Actions */}
-              <div className="flex gap-4">
-                <button
-                  onClick={() => handleDecision('approve')}
-                  className="btn-brand flex items-center gap-2 flex-1"
-                >
-                  <CheckCircle className="w-5 h-5" />
-                  Approve Application
-                </button>
-                <button
-                  onClick={() => handleDecision('request-info')}
-                  className="btn-secondary flex items-center gap-2 flex-1"
-                >
-                  <Clock className="w-5 h-5" />
-                  Request More Info
-                </button>
-                <button
-                  onClick={() => handleDecision('reject')}
-                  className="px-6 py-3 rounded-lg font-semibold border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 flex-1"
-                >
-                  <XCircle className="w-5 h-5" />
-                  Reject Application
-                </button>
-              </div>
+              {['Pending', 'NeedMoreInfo'].includes(application.creditLineStatus) ? (
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => handleDecision('approve')}
+                    className="btn-brand flex items-center gap-2 flex-1"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    Approve Application
+                  </button>
+                  <button
+                    onClick={() => handleDecision('request-info')}
+                    className="btn-secondary flex items-center gap-2 flex-1"
+                  >
+                    <Clock className="w-5 h-5" />
+                    Request More Info
+                  </button>
+                  <button
+                    onClick={() => handleDecision('reject')}
+                    className="px-6 py-3 rounded-lg font-semibold border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 flex-1"
+                  >
+                    <XCircle className="w-5 h-5" />
+                    Reject Application
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => handleDecision('request-info')}
+                    className="btn-secondary flex items-center gap-2 flex-1"
+                  >
+                    <Clock className="w-5 h-5" />
+                    Request More Info
+                  </button>
+                  <button
+                    onClick={() => handleDecision('reject')}
+                    className="px-6 py-3 rounded-lg font-semibold border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 flex-1"
+                  >
+                    <XCircle className="w-5 h-5" />
+                    Reject Application
+                  </button>
+                </div>
+              )}
             </>
           )}
 
@@ -500,6 +705,61 @@ const DecisionModal = ({ decision, application, decisionData, setDecisionData, s
               required={decision !== 'approve'}
             />
           </div>
+
+          {decision === 'approve' && (
+            <div className="mb-6">
+              <label className="input-label flex items-center gap-2">
+                <FileText className="w-4 h-4 text-brand-purple" />
+                Credit Review Report / Contract (PDF)
+              </label>
+              <div className="mt-1 flex items-center gap-4">
+                <label className="flex-1 cursor-pointer">
+                  <div className="flex items-center gap-2 p-3 border-2 border-dashed border-gray-200 rounded-lg hover:border-brand-purple hover:bg-gray-50 transition-all">
+                    <Upload className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-500">
+                      {decisionData.reportFile ? decisionData.reportFile.name : 'Select Review Report (PDF)'}
+                    </span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (file.size > 5 * 1024 * 1024) {
+                            alert('File size exceeds 5MB limit');
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            setDecisionData(prev => ({
+                              ...prev,
+                              reportFile: {
+                                name: file.name,
+                                fileType: file.type,
+                                fileSize: file.size,
+                                fileContent: event.target.result
+                              }
+                            }));
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </div>
+                </label>
+                {decisionData.reportFile && (
+                  <button
+                    onClick={() => setDecisionData(prev => ({ ...prev, reportFile: null }))}
+                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-2 italic">Highly recommended: Upload the formal credit committee report or signed contract.</p>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <button
