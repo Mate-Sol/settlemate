@@ -6,13 +6,13 @@
   - http://localhost:5000
   - Handles both CredMate and External PSP APIs
 
-- **External PSP Portal**: Port 5173 (Greenish Theme)
-  - http://localhost:5173
+- **External PSP Portal**: Port 5174 (Greenish Theme)
+  - http://localhost:5174
   - New system we just built
   - For external PSPs to manage order books and request loans
 
-- **CredMate PSP Client**: Port 5174 (Purple/Magenta Theme)
-  - http://localhost:5174
+- **CredMate PSP Client**: Port 5173 (Purple/Magenta Theme)
+  - http://localhost:5173
   - Existing CredMate system
   - Where PSPs manage repayments, credit lines, etc.
 
@@ -50,6 +50,6 @@ npm run dev
 
 ## Access URLs
 
-- External PSP: http://localhost:5173
-- CredMate PSP: http://localhost:5174
+- External PSP: http://localhost:5174
+- CredMate PSP: http://localhost:5173
 - Backend API: http://localhost:5000
