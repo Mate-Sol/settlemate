@@ -59,10 +59,10 @@ export const pspAPI = {
   getCreditLineExpiry: () => api.get('/psp/credit-line-expiry'),
 
   // Maintenance fee endpoints
-  getCurrentMaintenanceCharge: () => api.get('/psp/maintenance/current'),
-  getMaintenanceSummary: () => api.get('/psp/maintenance/summary'),
-  getMaintenanceCharges: () => api.get('/psp/maintenance/charges'),
-  payMaintenanceFee: (chargeId, data) => api.post(`/psp/maintenance/pay/${chargeId}`, data),
+  getCurrentMaintenanceCharge: () => api.get('/maintenance/current'),
+  getMaintenanceSummary: () => api.get('/maintenance/summary'),
+  getMaintenanceCharges: () => api.get('/maintenance/charges'),
+  payMaintenanceFee: (chargeId, data) => api.post(`/maintenance/pay/${chargeId}`, data),
   uploadDocument: (data) => api.post('/psp/upload-document', data),
 };
 
