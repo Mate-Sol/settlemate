@@ -10,7 +10,9 @@ const axios = require('axios');
 const validateExternalOrder = async (apiKey, orderId) => {
   try {
     const externalApiUrl = process.env.EXTERNAL_PSP_API_URL || 'http://localhost:5000/api/external-psp';
-    
+    console.log("🚀 ~ validateExternalOrder ~ externalApiUrl:", `${externalApiUrl}/orderbook/${orderId}`)
+    console.log("🚀 ~ validateExternalOrder ~ apiKey:", apiKey)
+
     const response = await axios.get(`${externalApiUrl}/orderbook/${orderId}`, {
       headers: {
         'X-API-Key': apiKey
@@ -35,6 +37,7 @@ const validateExternalOrder = async (apiKey, orderId) => {
 // @access  Public (verified by API key)
 router.post('/loan-request', async (req, res) => {
   try {
+    console.log("[Webhook] Loan request received from external PSP");
     const apiKey = req.header('X-API-Key');
     const apiSecret = req.header('X-API-Secret');
 
@@ -44,7 +47,7 @@ router.post('/loan-request', async (req, res) => {
 
     // Verify API credentials
     const externalPspUser = await ExternalPSPUser.findOne({ apiKey });
-    
+
     if (!externalPspUser || !externalPspUser.verifyApiCredentials(apiKey, apiSecret)) {
       return res.status(403).json({ message: 'Invalid API credentials' });
     }
@@ -61,8 +64,8 @@ router.post('/loan-request', async (req, res) => {
 
     // Validate required fields
     if (!orderReference || !orderId || !customerName || !amount) {
-      return res.status(400).json({ 
-        message: 'Order reference, order ID, customer name, and amount are required' 
+      return res.status(400).json({
+        message: 'Order reference, order ID, customer name, and amount are required'
       });
     }
 
@@ -72,7 +75,8 @@ router.post('/loan-request', async (req, res) => {
 
     // Step 1: Validate order data with external PSP API
     const validationResult = await validateExternalOrder(apiKey, orderId);
-    
+    console.log("🚀 ~ validationResult:", validationResult)
+
     if (!validationResult.success) {
       return res.status(400).json({
         message: 'Order validation failed',
@@ -84,7 +88,7 @@ router.post('/loan-request', async (req, res) => {
 
     // Step 2: Verify data matches
     if (externalOrderData.orderReference !== orderReference) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Order reference mismatch',
         provided: orderReference,
         actual: externalOrderData.orderReference
@@ -92,7 +96,7 @@ router.post('/loan-request', async (req, res) => {
     }
 
     if (externalOrderData.customerName !== customerName) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Customer name mismatch',
         provided: customerName,
         actual: externalOrderData.customerName
@@ -100,7 +104,7 @@ router.post('/loan-request', async (req, res) => {
     }
 
     if (externalOrderData.amount < amount) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Requested amount exceeds order amount',
         requested: amount,
         orderAmount: externalOrderData.amount
@@ -113,14 +117,14 @@ router.post('/loan-request', async (req, res) => {
     // First, check if there's a User account for this external PSP
     const User = require('../models/User');
     let pspUser = await User.findOne({ email: externalPspUser.email });
-    
+
     if (!pspUser) {
       // Create a user account for the external PSP
       console.log('[Webhook] Creating user account for external PSP');
       pspUser = new User({
         email: externalPspUser.email,
-        name:externalPspUser.companyName,
-        passwordHash:externalPspUser.password,
+        name: externalPspUser.companyName,
+        passwordHash: externalPspUser.password,
         role: 'PSP'
       });
       await pspUser.save();
@@ -143,7 +147,7 @@ router.post('/loan-request', async (req, res) => {
 
     // Step 4: Save order to main system's OrderBook
     let orderBook = await OrderBook.findOne({ referenceId: orderReference });
-    
+
     if (!orderBook) {
       console.log('[Webhook] Creating order book entry in main system');
       orderBook = new OrderBook({
@@ -192,9 +196,9 @@ router.post('/loan-request', async (req, res) => {
     });
   } catch (error) {
     console.error('[Webhook] Error processing loan request:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error processing loan request',
-      error: error.message 
+      error: error.message
     });
   }
 });

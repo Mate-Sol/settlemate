@@ -9,7 +9,7 @@ const axios = require('axios');
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({ message: 'No authorization token provided' });
     }
@@ -146,8 +146,8 @@ router.get('/profile', authMiddleware, async (req, res) => {
 // @access  Private
 router.get('/orderbook', authMiddleware, async (req, res) => {
   try {
-    const orders = await ExternalOrderBook.find({ 
-      externalPspUserId: req.user._id 
+    const orders = await ExternalOrderBook.find({
+      externalPspUserId: req.user._id
     }).sort({ createdAt: -1 });
 
     res.json(orders);
@@ -163,7 +163,7 @@ router.get('/orderbook', authMiddleware, async (req, res) => {
 router.get('/orderbook/:orderId', async (req, res) => {
   try {
     const apiKey = req.header('X-API-Key');
-    
+
     if (!apiKey) {
       return res.status(401).json({ message: 'API key required' });
     }
@@ -222,8 +222,8 @@ router.post('/orderbook', authMiddleware, async (req, res) => {
 
     // Validate required fields
     if (!orderReference || !customerName || !amount || !settlementDate) {
-      return res.status(400).json({ 
-        message: 'Order reference, customer name, amount, and settlement date are required' 
+      return res.status(400).json({
+        message: 'Order reference, customer name, amount, and settlement date are required'
       });
     }
 
@@ -288,7 +288,7 @@ router.post('/request-loan', authMiddleware, async (req, res) => {
 
     // Check if loan already requested
     if (order.loanRequested && order.loanStatus !== 'Rejected') {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Loan already requested for this order',
         loanStatus: order.loanStatus
       });
@@ -296,14 +296,14 @@ router.post('/request-loan', authMiddleware, async (req, res) => {
 
     // Validate amount
     if (requestedAmount > order.amount) {
-      return res.status(400).json({ 
-        message: 'Requested amount cannot exceed order amount' 
+      return res.status(400).json({
+        message: 'Requested amount cannot exceed order amount'
       });
     }
 
     // Call CredMate webhook
     const webhookUrl = process.env.CREDMATE_WEBHOOK_URL || 'http://localhost:5000/api/webhook/loan-request';
-    
+
     try {
       const webhookResponse = await axios.post(webhookUrl, {
         externalPspApiKey: req.user.apiKey,
@@ -328,7 +328,7 @@ router.post('/request-loan', authMiddleware, async (req, res) => {
       order.loanRequestDate = new Date();
       order.loanRequestAmount = requestedAmount;
       order.loanStatus = 'Pending';
-      
+
       if (webhookResponse.data.requestId) {
         order.credmateLoanRequestId = webhookResponse.data.requestId;
       }
@@ -342,7 +342,7 @@ router.post('/request-loan', authMiddleware, async (req, res) => {
       });
     } catch (webhookError) {
       console.error('Webhook call error:', webhookError.response?.data || webhookError.message);
-      
+
       res.status(500).json({
         message: 'Failed to submit loan request to CredMate',
         error: webhookError.response?.data?.message || webhookError.message
@@ -389,7 +389,7 @@ router.post('/webhook/loan-approved', async (req, res) => {
   try {
     const apiKey = req.header('X-API-Key');
     const apiSecret = req.header('X-API-Secret');
-    
+
     if (!apiKey || !apiSecret) {
       return res.status(401).json({ message: 'API credentials required' });
     }
@@ -400,12 +400,12 @@ router.post('/webhook/loan-approved', async (req, res) => {
       return res.status(403).json({ message: 'Invalid API credentials' });
     }
 
-    const { 
-      orderId, 
-      credmateLoanId, 
-      status, 
+    const {
+      orderId,
+      credmateLoanId,
+      status,
       approvedAmount,
-      message 
+      message
     } = req.body;
 
     if (!orderId) {
@@ -426,7 +426,7 @@ router.post('/webhook/loan-approved', async (req, res) => {
     order.loanStatus = status || 'Approved';
     order.credmateLoanId = credmateLoanId;
     order.approvedAt = new Date();
-    
+
     if (approvedAmount) {
       order.approvedAmount = approvedAmount;
     }

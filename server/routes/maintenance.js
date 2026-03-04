@@ -11,7 +11,7 @@ const { authMiddleware, authorizeRoles } = require('../middleware/auth');
 router.use(authMiddleware);
 router.use(authorizeRoles('PSP'));
 
-// @route   GET /api/psp/maintenance/charges
+// @route   GET /api/maintenance/charges
 // @desc    Get all maintenance charges for logged-in PSP
 // @access  Private (PSP)
 router.get('/charges', async (req, res) => {
@@ -45,7 +45,7 @@ router.get('/charges', async (req, res) => {
   }
 });
 
-// @route   GET /api/psp/maintenance/current
+// @route   GET /api/maintenance/current
 // @desc    Get current pending maintenance charge (if any)
 // @access  Private (PSP)
 router.get('/current', async (req, res) => {
@@ -83,7 +83,7 @@ router.get('/current', async (req, res) => {
   }
 });
 
-// @route   POST /api/psp/maintenance/pay/:chargeId
+// @route   POST /api/maintenance/pay/:chargeId
 // @desc    Pay a maintenance charge
 // @access  Private (PSP)
 router.post('/pay/:chargeId', async (req, res) => {
@@ -133,7 +133,7 @@ router.post('/pay/:chargeId', async (req, res) => {
   }
 });
 
-// @route   GET /api/psp/maintenance/summary
+// @route   GET /api/maintenance/summary
 // @desc    Get maintenance fee summary for PSP
 // @access  Private (PSP)
 router.get('/summary', async (req, res) => {
@@ -197,7 +197,7 @@ router.get('/summary', async (req, res) => {
   }
 });
 
-// @route   POST /api/psp/maintenance/trigger-calculation
+// @route   POST /api/maintenance/trigger-calculation
 // @desc    Manually trigger daily maintenance calculation (Admin/Testing)
 // @access  Private (Admin only - TODO: Add admin check)
 router.post('/trigger-calculation', async (req, res) => {
@@ -216,7 +216,7 @@ router.post('/trigger-calculation', async (req, res) => {
   }
 });
 
-// @route   POST /api/psp/maintenance/mark-overdue
+// @route   POST /api/maintenance/mark-overdue
 // @desc    Manually mark overdue charges (Admin/Testing)
 // @access  Private (Admin only - TODO: Add admin check)
 router.post('/mark-overdue', async (req, res) => {
