@@ -18,13 +18,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/psp', require('./routes/psp'));
-app.use('/api/psp/maintenance', require('./routes/maintenance'));
-app.use('/api/cro', require('./routes/cro'));
-app.use('/api/cfo', require('./routes/cfo'));
-app.use('/api/external-psp', require('./routes/externalPsp'));
-app.use('/api/webhook', require('./routes/webhook'));
+app.use('/auth', require('./routes/auth'));
+app.use('/psp', require('./routes/psp'));
+app.use('/maintenance', require('./routes/maintenance'));
+app.use('/cro', require('./routes/cro'));
+app.use('/cfo', require('./routes/cfo'));
+app.use('/external-psp', require('./routes/externalPsp'));
+app.use('/webhook', require('./routes/webhook'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -34,7 +34,7 @@ app.get('/health', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
+  res.status(500).json({
     message: 'Something went wrong!',
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
