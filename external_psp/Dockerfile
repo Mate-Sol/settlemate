@@ -1,7 +1,8 @@
 
 FROM nginx:1.25.1
 
-COPY dist/ /usr/share/nginx/html
+RUN mkdir -p /usr/share/nginx/html/externel-psp
+COPY dist/ /usr/share/nginx/html/externel-psp/
 
 # needed this to make React Router work properly 
 RUN rm /etc/nginx/conf.d/default.conf

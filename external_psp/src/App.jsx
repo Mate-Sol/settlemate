@@ -11,7 +11,7 @@ import './App.css';
 
 function App() {
   return (
-    <Router basename="/external_psp">
+    <Router basename="/externel-psp">
       <AuthProvider>
         <Routes>
           {/* Public Routes */}
