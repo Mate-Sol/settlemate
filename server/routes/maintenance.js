@@ -4,6 +4,12 @@ const PSPProfile = require('../models/PSPProfile');
 const CreditMaintenanceCharge = require('../models/CreditMaintenanceCharge');
 const contractService = require('../services/contractService');
 const { processDailyMaintenance, markOverdueCharges } = require('../workers/creditMaintenanceWorker');
+const { authMiddleware, authorizeRoles } = require('../middleware/auth');
+
+
+// Apply authentication to all PSP routes
+router.use(authMiddleware);
+router.use(authorizeRoles('PSP'));
 
 // @route   GET /api/psp/maintenance/charges
 // @desc    Get all maintenance charges for logged-in PSP
