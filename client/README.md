@@ -1,16 +1,30 @@
-# React + Vite
+SettleMate – PSP Credit Line Solution
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Overview
+SettleMate provides a streamlined credit line management system for Payment Service Providers (PSPs) integrated with DeFa on Arbitrum. PSPs can onboard, apply for financing limits, and receive approvals, while administrators manage reviews efficiently. The system demonstrates a secure and transparent on-chain credit line workflow.
 
-Currently, two official plugins are available:
+Key Features & Flow
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+PSP Onboarding: PSPs register using their company, business, and financial details. KYC and financing documents are uploaded during onboarding.
 
-## React Compiler
+Credit Line Application: PSPs request a financing limit with specified duration and supporting documents. This creates a record for admin review.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Admin Review: Three roles—Key Account Manager, CFO, CRO—can approve, request more details, or reject the application. Notifications are sent to PSPs for updates.
 
-## Expanding the ESLint configuration
+Credit Line Assignment & Disbursement: Once approved, the credit line is assigned to the PSP. Disbursement occurs automatically via fiat or crypto, reflecting on-chain balances in DeFa. Notifications confirm status changes.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Replenishment & Renewal: PSP repayments update the on-chain credit line. Duration and renewal are managed either automatically or by the CFO according to credit relationships.
+
+Technical Stack
+
+Blockchain: DeFa on Arbitrum (EVM-compatible) for secure on-chain credit line tracking.
+
+Frontend & Backend: Multi-repo architecture with admin and PSP portals.
+
+Smart Contracts: Handle allocation, disbursement, and credit line balances.
+
+Notes 
+
+This repo demonstrates the PSP credit line use case.
+
+The README highlights collaborator contributions and the end-to-end workflow.

@@ -29,3 +29,7 @@ dist-ssr
 
 # GitHub workflows / configs
 .github/
+.env
+.env.*
+!.env.example
+.github/

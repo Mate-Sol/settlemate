@@ -1,0 +1,62 @@
+name: external_psp-CICD
+
+on:
+  push:
+    branches:
+      - beta # Change to your branch name if needed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+      - run: npm i --force
+        working-directory: ./external_psp
+      - run: npm run build
+        working-directory: ./external_psp
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_UNAME }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: matesol/settlemate-external_psp
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./external_psp
+          file: ./external_psp/Dockerfile
+          cache-from: none
+          push: true
+          tags: matesol/settlemate-external_psp:latest
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.credmate_borrower_private_key }}
+
+      - name: Deploy Docker container on VM
+        run: |
+          ssh -o StrictHostKeyChecking=no credmateborrower@34.18.114.130 << 'EOF'
+            docker pull matesol/settlemate-external_psp:latest
+            docker stop settlemate-external_psp || true
+            docker rm settlemate-external_psp || true
+            docker run -d \
+              --restart always \
+              --name settlemate-external_psp \
+              -p 3051:80 \
+              matesol/settlemate-external_psp:latest
+          EOF
