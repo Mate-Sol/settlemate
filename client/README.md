@@ -23,6 +23,22 @@ Frontend & Backend: Multi-repo architecture with admin and PSP portals.
 
 Smart Contracts: Handle allocation, disbursement, and credit line balances.
 
+PSP Workflow Details
+
+Key Account Manager:
+
+View applications, approve, request more info, reject
+Notes field visible
+
+CFO:
+
+Approve/reject, assign insurance, view credit report
+
+CRO:
+
+Assign credit line, approve, need more info
+Dropdown filled from available credit lines
+
 Notes 
 
 This repo demonstrates the PSP credit line use case.
