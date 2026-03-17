@@ -6,6 +6,8 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const PSPProfile = require('../models/PSPProfile');
 const mongoose = require('mongoose'); // Ensure mongoose is imported
+const { createNotification } = require('../services/notificationService');
+const { sendEmail } = require('../services/emailService');
 
 
 // @route   POST /api/auth/register
@@ -106,6 +108,46 @@ router.post('/register',
 
       // 5. Commit the transaction (Make changes permanent)
       await session.commitTransaction();
+
+      // Trigger Notifications and Emails (After commit to ensure DB consistency)
+      try {
+        // 1. Notify the PSP User (Welcome)
+        await createNotification(user._id, {
+          title: 'Welcome to PayMate!',
+          message: 'Your account has been created successfully. Please apply for a credit line to get started.',
+          type: 'success'
+        });
+
+        await sendEmail({
+          to: user.email,
+          subject: 'Welcome to PayMate!',
+          title: `Welcome to PayMate, ${name}!`,
+          body: `<p>Your registration for <strong>${companyName}</strong> was successful.</p>
+                 <p>To start using our services, please log in and complete your profile application for a financing limit.</p>`,
+          actionLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+          actionText: 'Go to Dashboard'
+        });
+
+        // 2. Notify Admins (CRO / CFO)
+        const admins = await User.find({ role: { $in: ['CRO', 'CFO'] } });
+        for (const admin of admins) {
+          await createNotification(admin._id, {
+            title: 'New PSP Registered',
+            message: `${companyName} has just registered in the system and is pending review.`,
+            type: 'info'
+          });
+
+          await sendEmail({
+            to: admin.email,
+            subject: 'New PSP Registration - Action Required',
+            title: 'New PSP Registration',
+            body: `<p>A new PSP <strong>${companyName}</strong> has registered and needs profile verification review.</p>`
+          });
+        }
+      } catch (notifyError) {
+        console.error('Failed to send registration notifications:', notifyError);
+        // We do not fail the request if notifications fail
+      }
 
       // Generate JWT (Operations outside DB don't need the session)
       const token = jwt.sign(

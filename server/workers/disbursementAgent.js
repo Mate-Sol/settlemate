@@ -8,6 +8,9 @@ const PSPProfile = require('../models/PSPProfile');
 const OrderBook = require('../models/OrderBook');
 const ExternalOrderBook = require('../models/ExternalOrderBook');
 const contractService = require('../services/contractService');
+const { createNotification } = require('../services/notificationService');
+const { sendEmail } = require('../services/emailService');
+const User = require('../models/User'); // Required for admin notifications
 
 /**
  * Disburse financing via smart contract
@@ -17,8 +20,12 @@ async function disburseFinancing(requestId) {
   try {
     console.log(`[Disbursement Agent] Starting disbursement for request: ${requestId}`);
 
-    // Get the financing request with populated PSP data
-    const request = await FinancingRequest.findById(requestId).populate('pspId');
+    // Get the financing request with populated PSP and User data
+    const request = await FinancingRequest.findById(requestId).populate({
+      path: 'pspId',
+      populate: { path: 'userId' }
+    });
+    
     if (!request || request.status !== 'Validated') {
       console.error(`[Disbursement Agent] Invalid request status: ${request?.status}`);
       return;
@@ -133,6 +140,31 @@ async function disburseFinancing(requestId) {
 
       console.log(`[Disbursement Agent] ✓ DISBURSED successfully`);
 
+      // Trigger Success Notification & Email
+      try {
+        if (psp && psp.userId) {
+          await createNotification(psp.userId._id, {
+            title: 'Funds Disbursed!',
+            message: `Disbursement of $${request.amount.toLocaleString()} for order ${request.orderReference} was successful.`,
+            type: 'success'
+          });
+
+          await sendEmail({
+            to: psp.userId.email,
+            subject: 'Funds Disbursed Successfully!',
+            title: 'Funds Disbursed',
+            body: `<p>Great news! The drawdown request for order <strong>${request.orderReference}</strong> has been executed successfully on-chain.</p>
+                   <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                     <p style="margin: 5px 0;"><strong>Amount:</strong> $${request.amount.toLocaleString()}</p>
+                     <p style="margin: 5px 0;"><strong>Transaction Hash:</strong> <span style="font-family: monospace;">${receipt.transactionHash}</span></p>
+                   </div>
+                   <p>Please check your wallet address: <strong>${psp.walletAddress}</strong></p>`
+          });
+        }
+      } catch (notifyError) {
+        console.error('[Disbursement Agent] Success notification error:', notifyError);
+      }
+
     } catch (contractError) {
       console.error(`[Disbursement Agent] Contract error:`, contractError);
       
@@ -142,6 +174,30 @@ async function disburseFinancing(requestId) {
       });
       
       console.log(`[Disbursement Agent] FAILED - Contract error`);
+
+      // Trigger Failure Notification to CFO/CRO
+      try {
+        const admins = await User.find({ role: { $in: ['CRO', 'CFO'] } });
+        for (const admin of admins) {
+          await createNotification(admin._id, {
+            title: 'Disbursement FAILED',
+            message: `Disbursement failed for request ${requestId} (PSP: ${psp.companyName}). Error: ${contractError.message || 'Unknown error'}`,
+            type: 'danger'
+          });
+          
+          await sendEmail({
+            to: admin.email,
+            subject: 'CRITICAL: Disbursement Failure Alert',
+            title: 'CRITICAL: Disbursement Failed',
+            body: `<p>On-chain disbursement has failed for request ID <strong>${requestId}</strong>.</p>
+                   <p><strong>PSP:</strong> ${psp.companyName}</p>
+                   <p><strong>Error Message:</strong> ${contractError.message || 'Check logs'}</p>
+                   <p>Manual review and funding intervention might be required immediately.</p>`
+          });
+        }
+      } catch (notifyError) {
+        console.error('[Disbursement Agent] Failure notification error:', notifyError);
+      }
     }
 
   } catch (error) {

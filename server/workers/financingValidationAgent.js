@@ -8,6 +8,33 @@ const PSPProfile = require('../models/PSPProfile');
 const OrderBook = require('../models/OrderBook');
 const ExternalOrderBook = require('../models/ExternalOrderBook');
 const { disburseFinancing } = require('./disbursementAgent');
+const { createNotification } = require('../services/notificationService');
+const { sendEmail } = require('../services/emailService');
+
+/**
+ * Send notification to PSP about rejection
+ */
+async function notifyRejection(request, reason) {
+  try {
+    const psp = request.pspId;
+    if (psp && psp.userId) {
+      await createNotification(psp.userId._id, {
+        title: 'Financing Request Rejected',
+        message: `Your request for order ${request.orderReference} was rejected. Reason: ${reason}`,
+        type: 'danger'
+      });
+      
+      await sendEmail({
+        to: psp.userId.email,
+        subject: 'Financing Request Rejected',
+        title: 'Financing Request Rejected',
+        body: `<p>Your financing request for order <strong>${request.orderReference}</strong> has been rejected.</p><p><strong>Reason:</strong> ${reason}</p>`
+      });
+    }
+  } catch (err) {
+    console.error('[Validation Agent] Notification error:', err);
+  }
+}
 
 /**
  * Validate a financing request in the background
@@ -17,8 +44,12 @@ async function validateFinancingRequest(requestId) {
   try {
     console.log(`[Validation Agent] Starting validation for request: ${requestId}`);
 
-    // Get the financing request
-    const request = await FinancingRequest.findById(requestId).populate('pspId');
+    // Get the financing request with nested user population
+    const request = await FinancingRequest.findById(requestId).populate({
+      path: 'pspId',
+      populate: { path: 'userId' }
+    });
+    
     if (!request) {
       console.error(`[Validation Agent] Request not found: ${requestId}`);
       return;
@@ -42,6 +73,8 @@ async function validateFinancingRequest(requestId) {
         status: 'Rejected',
         rejectionReason
       });
+      
+      await notifyRejection(request, rejectionReason);
       
       // Update External PSP orderbook if applicable
       if (request.isExternalPSP && (request.externalOrderId || request.orderReference)) {
@@ -77,6 +110,8 @@ async function validateFinancingRequest(requestId) {
         rejectionReason
       });
       
+      await notifyRejection(request, rejectionReason);
+      
       // Update External PSP orderbook if applicable
       if (request.isExternalPSP && (request.externalOrderId || request.orderReference)) {
         await ExternalOrderBook.findOneAndUpdate(
@@ -106,6 +141,8 @@ async function validateFinancingRequest(requestId) {
         status: 'Rejected',
         rejectionReason
       });
+      
+      await notifyRejection(request, rejectionReason);
       
       // Update External PSP orderbook if applicable
       if (request.isExternalPSP && (request.externalOrderId || request.orderReference)) {
@@ -145,6 +182,8 @@ async function validateFinancingRequest(requestId) {
         rejectionReason
       });
       
+      await notifyRejection(request, rejectionReason);
+      
       // Update External PSP orderbook if applicable
       if (request.isExternalPSP && (request.externalOrderId || request.orderReference)) {
         await ExternalOrderBook.findOneAndUpdate(
@@ -172,6 +211,20 @@ async function validateFinancingRequest(requestId) {
       status: 'Validated',
       validatedAt: new Date()
     });
+
+    // Trigger Success Notification
+    try {
+      const psp = request.pspId;
+      if (psp && psp.userId) {
+        await createNotification(psp.userId._id, {
+          title: 'Financing Request Validated',
+          message: `Your request for order ${request.orderReference} has been validated and disbursement is underway.`,
+          type: 'success'
+        });
+      }
+    } catch (notifyError) {
+      console.error('[Validation Agent] Success notification error:', notifyError);
+    }
 
     console.log(`[Validation Agent] VALIDATED ✓ - Triggering disbursement`);
 

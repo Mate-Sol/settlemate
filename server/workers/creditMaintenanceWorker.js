@@ -5,6 +5,9 @@
 
 const PSPProfile = require('../models/PSPProfile');
 const CreditMaintenanceCharge = require('../models/CreditMaintenanceCharge');
+const { createNotification } = require('../services/notificationService');
+const { sendEmail } = require('../services/emailService');
+const User = require('../models/User'); // For CFO alerts
 
 /**
  * Calculate daily maintenance fee for a PSP
@@ -90,6 +93,28 @@ async function createMaintenanceCharge(psp) {
     psp.nextMaintenanceDueDate = dueDate;
     psp.accumulatedMaintenanceFee = 0; // Reset accumulator
     await psp.save();
+
+    // Trigger Charge Created Notification
+    try {
+      if (psp && psp.userId) {
+        await createNotification(psp.userId._id, {
+          title: 'New Maintenance Charge',
+          message: `A maintenance charge of $${chargeAmount.toFixed(2)} has been generated. Due on ${dueDate.toLocaleDateString()}`,
+          type: 'info'
+        });
+
+        await sendEmail({
+          to: psp.userId.email,
+          subject: 'New Credit Line Maintenance Charge',
+          title: 'New Maintenance Charge',
+          body: `<p>A new maintenance charge has been generated for <strong>${psp.companyName}</strong>.</p>
+                 <p><strong>Amount:</strong> $${chargeAmount.toFixed(2)}</p>
+                 <p><strong>Due Date:</strong> ${dueDate.toLocaleDateString()}</p>`
+        });
+      }
+    } catch (notifyError) {
+      console.error('[Maintenance] Notification error:', notifyError);
+    }
     
     console.log(`[Maintenance] Created charge ${charge._id} for PSP ${psp.companyName}: $${chargeAmount}`);
     
@@ -111,7 +136,7 @@ async function processDailyMaintenance() {
     const psps = await PSPProfile.find({
       creditLineStatus: { $in: ['Active', 'Approved'] },
       approvedAmount: { $gt: 0 }
-    });
+    }).populate('userId');
     
     console.log(`[Maintenance Worker] Processing ${psps.length} PSPs`);
     
@@ -176,12 +201,48 @@ async function markOverdueCharges() {
     const overdueCharges = await CreditMaintenanceCharge.find({
       status: 'Pending',
       dueDate: { $lt: now }
+    }).populate({
+      path: 'pspId',
+      populate: { path: 'userId' }
     });
     
     console.log(`[Maintenance Worker] Marking ${overdueCharges.length} charges as overdue`);
     
     for (const charge of overdueCharges) {
       await charge.markAsOverdue();
+
+      // Trigger Overdue Notification
+      try {
+        const psp = charge.pspId;
+        if (psp && psp.userId) {
+          await createNotification(psp.userId._id, {
+            title: 'Maintenance Charge OVERDUE',
+            message: `Your maintenance charge of $${charge.chargeAmount.toFixed(2)} is past due.`,
+            type: 'danger'
+          });
+
+          await sendEmail({
+            to: psp.userId.email,
+            subject: 'URGENT: Maintenance Charge Overdue',
+            title: 'Maintenance Charge Overdue',
+            body: `<p>Your maintenance charge for <strong>${psp.companyName}</strong> is overdue.</p>
+                   <p><strong>Amount:</strong> $${charge.chargeAmount.toFixed(2)}</p>
+                   <p>Please log in and settle the invoice immediately to avoid credit locking.</p>`
+          });
+          
+          // Notify Admin (CFO)
+          const admins = await User.find({ role: 'CFO' });
+          for (const admin of admins) {
+            await createNotification(admin._id, {
+              title: 'PSP Charge Overdue',
+              message: `PSP ${psp.companyName} has an overdue maintenance charge of $${charge.chargeAmount.toFixed(2)}`,
+              type: 'warning'
+            });
+          }
+        }
+      } catch (notifyError) {
+        console.error('[Maintenance Worker] Overdue notification error:', notifyError);
+      }
     }
     
     return {

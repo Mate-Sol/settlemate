@@ -2,6 +2,8 @@ const FinancingRequest = require('../models/FinancingRequest');
 const RepaymentRecord = require('../models/RepaymentRecord');
 const PSPProfile = require('../models/PSPProfile');
 const contractService = require('../services/contractService');
+const { createNotification } = require('../services/notificationService');
+const { sendEmail } = require('../services/emailService');
 
 /**
  * Repayment Agent - Processes PSP repayments and restores credit lines
@@ -18,7 +20,10 @@ async function processRepayment(requestId, repaymentData) {
     console.log(`[Repayment Agent] Processing repayment for request: ${requestId}`);
     
     // 1. Find and validate financing request
-    const financing = await FinancingRequest.findById(requestId).populate('pspId');
+    const financing = await FinancingRequest.findById(requestId).populate({
+      path: 'pspId',
+      populate: { path: 'userId' }
+    });
     
     if (!financing) {
       throw new Error(`Financing request ${requestId} not found`);
@@ -91,6 +96,32 @@ async function processRepayment(requestId, repaymentData) {
       await psp.save();
     }
     
+    // Trigger Repayment Notification
+    try {
+      if (psp && psp.userId) {
+        await createNotification(psp.userId._id, {
+          title: 'Repayment Successful!',
+          message: `Repayment of $${(principalAmount + actualInterestPaid).toLocaleString()} for order ${financing.orderReference} was successful.`,
+          type: 'success'
+        });
+
+        await sendEmail({
+          to: psp.userId.email,
+          subject: 'Repayment Received - Confirmation',
+          title: 'Repayment Received',
+          body: `<p>We have successfully processed your repayment for order <strong>${financing.orderReference}</strong>.</p>
+                 <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                   <p style="margin: 5px 0;"><strong>Principal:</strong> $${principalAmount.toLocaleString()}</p>
+                   <p style="margin: 5px 0;"><strong>Interest Paid:</strong> $${actualInterestPaid.toLocaleString()}</p>
+                   <p style="margin: 5px 0;"><strong>Total Repaid:</strong> $${(principalAmount + actualInterestPaid).toLocaleString()}</p>
+                 </div>
+                 <p>Your available credit line has been restored by $${principalAmount.toLocaleString()}.</p>`
+        });
+      }
+    } catch (notifyError) {
+      console.error('[Repayment Agent] Success notification error:', notifyError);
+    }
+
     // 7. Return success result
     return {
       success: true,

@@ -3,6 +3,9 @@ const router = express.Router();
 const { authMiddleware, authorizeRoles } = require('../middleware/auth');
 const PSPProfile = require('../models/PSPProfile');
 const contractService = require('../services/contractService');
+const { createNotification } = require('../services/notificationService');
+const { sendEmail } = require('../services/emailService');
+const User = require('../models/User');
 
 // Apply authentication and CRO authorization to all routes
 router.use(authMiddleware);
@@ -85,7 +88,7 @@ router.post('/applications/:id/approve', async (req, res) => {
   try {
     const { approvedAmount, approvedDuration, walletAddress, notes } = req.body;
 
-    const profile = await PSPProfile.findById(req.params.id);
+    const profile = await PSPProfile.findById(req.params.id).populate('userId');
 
     if (!profile) {
       return res.status(404).json({ message: 'Application not found' });
@@ -133,6 +136,33 @@ router.post('/applications/:id/approve', async (req, res) => {
 
     await profile.save();
 
+    // Trigger Notifications & Emails
+    try {
+      if (profile.userId) {
+        await createNotification(profile.userId._id, {
+          title: 'Application Approved!',
+          message: `Your credit line of $${approvedAmount.toLocaleString()} has been approved.`,
+          type: 'success'
+        });
+
+        await sendEmail({
+          to: profile.userId.email,
+          subject: 'Credit Line Application Approved',
+          title: 'Congratulations!',
+          body: `<p>Your financing limit application for <strong>${profile.companyName}</strong> has been approved.</p>
+                 <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                   <p style="margin: 5px 0;"><strong>Approved Amount:</strong> $${approvedAmount.toLocaleString()}</p>
+                   <p style="margin: 5px 0;"><strong>Duration:</strong> ${approvedDuration} days</p>
+                 </div>
+                 <p>You can now log in to request drawdowns (financing) against your available limit.</p>`,
+          actionLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+          actionText: 'Go to Dashboard'
+        });
+      }
+    } catch (notifyError) {
+      console.error('Failed to send approval notifications:', notifyError);
+    }
+
 
 
     // Fund the pool asynchronously (in background)
@@ -163,7 +193,7 @@ router.post('/applications/:id/reject', async (req, res) => {
   try {
     const { notes } = req.body;
 
-    const profile = await PSPProfile.findById(req.params.id);
+    const profile = await PSPProfile.findById(req.params.id).populate('userId');
 
     if (!profile) {
       return res.status(404).json({ message: 'Application not found' });
@@ -171,6 +201,27 @@ router.post('/applications/:id/reject', async (req, res) => {
 
     profile.creditLineStatus = 'Rejected';
     await profile.save();
+
+    // Trigger Notifications & Emails
+    try {
+      if (profile.userId) {
+        await createNotification(profile.userId._id, {
+          title: 'Application Update (Rejected)',
+          message: `Your application has been rejected. Notes: ${notes || 'No notes provided.'}`,
+          type: 'danger'
+        });
+
+        await sendEmail({
+          to: profile.userId.email,
+          subject: 'Application Status Update',
+          title: 'Application Update',
+          body: `<p>Your credit line application for <strong>${profile.companyName}</strong> has been reviewed and rejected.</p>
+                 <p><strong>Reason/Notes:</strong> ${notes || 'Please contact support for more details.'}</p>`
+        });
+      }
+    } catch (notifyError) {
+      console.error('Failed to send rejection notifications:', notifyError);
+    }
 
     res.json({ message: 'Application rejected', profile });
   } catch (error) {
@@ -186,7 +237,7 @@ router.post('/applications/:id/request-info', async (req, res) => {
   try {
     const { notes } = req.body;
 
-    const profile = await PSPProfile.findById(req.params.id);
+    const profile = await PSPProfile.findById(req.params.id).populate('userId');
 
     if (!profile) {
       return res.status(404).json({ message: 'Application not found' });
@@ -196,6 +247,30 @@ router.post('/applications/:id/request-info', async (req, res) => {
     profile.cadMessage = notes || 'Additional information required.';
     // profile.approvedAmount = 0; // Reset credit line
     await profile.save();
+
+    // Trigger Notifications & Emails
+    try {
+      if (profile.userId) {
+        await createNotification(profile.userId._id, {
+          title: 'Information Required',
+          message: `Additional information is required for your application. Notes: ${notes || 'No notes provided.'}`,
+          type: 'warning'
+        });
+
+        await sendEmail({
+          to: profile.userId.email,
+          subject: 'Action Required: Application Information Needed',
+          title: 'Information Required',
+          body: `<p>We need additional information to process your application for <strong>${profile.companyName}</strong>.</p>
+                 <p><strong>Message from Reviewer:</strong> ${notes || 'Please check your dashboard.'}</p>
+                 <p>Please log in and update your profile or upload the requested documents.</p>`,
+          actionLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
+          actionText: 'Go to Dashboard'
+        });
+      }
+    } catch (notifyError) {
+      console.error('Failed to send request-info notifications:', notifyError);
+    }
 
     res.json({ message: 'Additional information requested', profile });
   } catch (error) {
