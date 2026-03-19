@@ -4,7 +4,9 @@ const ExternalPSPUser = require('../models/ExternalPSPUser');
 const OrderBook = require('../models/OrderBook');
 const PSPProfile = require('../models/PSPProfile');
 const FinancingRequest = require('../models/FinancingRequest');
+const EfficientPayout = require('../models/EfficientPayout');
 const axios = require('axios');
+const jwt = require('jsonwebtoken'); // Added to validate partner tokens
 
 // External PSP API service to validate order data
 const validateExternalOrder = async (apiKey, orderId) => {
@@ -198,6 +200,77 @@ router.post('/loan-request', async (req, res) => {
     console.error('[Webhook] Error processing loan request:', error);
     res.status(500).json({
       message: 'Server error processing loan request',
+      error: error.message
+    });
+  }
+});
+
+// @route   POST /webhook/eficyent/payouts
+// @desc    Dynamic webhook for Efficient Payouts partner
+// @access  Public (verified by JWT Token AND API key)
+router.post('/eficyent/payouts', async (req, res) => {
+  try {
+    const apiKey = req.header('X-API-Key');
+    const authHeader = req.header('Authorization');
+    const token = authHeader ? authHeader.replace('Bearer ', '') : null;
+
+    if (!apiKey || !token) {
+      return res.status(401).json({ 
+        message: 'Authentication required. Provide X-API-Key and Authorization: Bearer <token>' 
+      });
+    }
+
+    // 1. Verify JWT Token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid or expired access token' });
+    }
+
+    // Ensure it's a partner token
+    if (decoded.role !== 'EXTERNAL_PSP_PARTNER' || !decoded.partnerId) {
+      return res.status(403).json({ message: 'Access denied: Valid partner token required' });
+    }
+
+    // 2. Verify API Key against the partner record
+    const partner = await ExternalPSPUser.findById(decoded.partnerId);
+
+    if (!partner || !partner.isActive) {
+      return res.status(403).json({ message: 'Partner account not found or inactive' });
+    }
+
+    // Verify provided API Key matches the partner's assigned key
+    if (partner.apiKey !== apiKey) {
+      return res.status(403).json({ message: 'API Key mismatch for this session' });
+    }
+
+    console.log('[Webhook] Authenticated Efficient Payout from:', partner.companyName);
+
+    // Capture everything dynamically into the specified collection
+    const payoutData = new EfficientPayout({
+      payload: req.body,
+      metadata: {
+        headers: req.headers,
+        ip: req.ip,
+        partnerId: partner._id,
+        receivedAt: new Date()
+      }
+    });
+
+    await payoutData.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Webhook received and stored successfully',
+      id: payoutData._id
+    });
+
+  } catch (error) {
+    console.error('[Webhook] Error processing Efficient Payout:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error processing webhook',
       error: error.message
     });
   }
