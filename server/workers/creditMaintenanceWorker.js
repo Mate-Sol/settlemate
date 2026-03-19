@@ -108,8 +108,10 @@ async function createMaintenanceCharge(psp) {
           subject: 'New Credit Line Maintenance Charge',
           title: 'New Maintenance Charge',
           body: `<p>A new maintenance charge has been generated for <strong>${psp.companyName}</strong>.</p>
-                 <p><strong>Amount:</strong> $${chargeAmount.toFixed(2)}</p>
-                 <p><strong>Due Date:</strong> ${dueDate.toLocaleDateString()}</p>`
+                 <div style="background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.05);">
+                   <p style="margin: 5px 0;"><strong>Amount:</strong> $${chargeAmount.toFixed(2)}</p>
+                   <p style="margin: 5px 0;"><strong>Due Date:</strong> ${dueDate.toLocaleDateString()}</p>
+                 </div>`
         });
       }
     } catch (notifyError) {
@@ -226,7 +228,9 @@ async function markOverdueCharges() {
             subject: 'URGENT: Maintenance Charge Overdue',
             title: 'Maintenance Charge Overdue',
             body: `<p>Your maintenance charge for <strong>${psp.companyName}</strong> is overdue.</p>
-                   <p><strong>Amount:</strong> $${charge.chargeAmount.toFixed(2)}</p>
+                   <div style="background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.05);">
+                     <p style="margin: 5px 0;"><strong>Amount:</strong> $${charge.chargeAmount.toFixed(2)}</p>
+                   </div>
                    <p>Please log in and settle the invoice immediately to avoid credit locking.</p>`
           });
           

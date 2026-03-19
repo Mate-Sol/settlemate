@@ -110,7 +110,7 @@ async function processRepayment(requestId, repaymentData) {
           subject: 'Repayment Received - Confirmation',
           title: 'Repayment Received',
           body: `<p>We have successfully processed your repayment for order <strong>${financing.orderReference}</strong>.</p>
-                 <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                 <div style="background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.05);">
                    <p style="margin: 5px 0;"><strong>Principal:</strong> $${principalAmount.toLocaleString()}</p>
                    <p style="margin: 5px 0;"><strong>Interest Paid:</strong> $${actualInterestPaid.toLocaleString()}</p>
                    <p style="margin: 5px 0;"><strong>Total Repaid:</strong> $${(principalAmount + actualInterestPaid).toLocaleString()}</p>

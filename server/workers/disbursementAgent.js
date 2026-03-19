@@ -154,7 +154,7 @@ async function disburseFinancing(requestId) {
             subject: 'Funds Disbursed Successfully!',
             title: 'Funds Disbursed',
             body: `<p>Great news! The drawdown request for order <strong>${request.orderReference}</strong> has been executed successfully on-chain.</p>
-                   <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                   <div style="background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.05);">
                      <p style="margin: 5px 0;"><strong>Amount:</strong> $${request.amount.toLocaleString()}</p>
                      <p style="margin: 5px 0;"><strong>Transaction Hash:</strong> <span style="font-family: monospace;">${receipt.transactionHash}</span></p>
                    </div>
@@ -190,8 +190,12 @@ async function disburseFinancing(requestId) {
             subject: 'CRITICAL: Disbursement Failure Alert',
             title: 'CRITICAL: Disbursement Failed',
             body: `<p>On-chain disbursement has failed for request ID <strong>${requestId}</strong>.</p>
-                   <p><strong>PSP:</strong> ${psp.companyName}</p>
-                   <p><strong>Error Message:</strong> ${contractError.message || 'Check logs'}</p>
+                   <div style="background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.05);">
+                     <p style="margin: 0 0 5px 0; font-weight: bold; color: #ffffff;">PSP:</p>
+                     <p style="margin: 0; color: #ebdffc;">${psp.companyName}</p>
+                     <p style="margin: 0 0 5px 0; font-weight: bold; color: #ffffff;">Error Message:</p>
+                     <p style="margin: 0; color: #ebdffc;">${contractError.message || 'Check logs'}</p>
+                   </div>
                    <p>Manual review and funding intervention might be required immediately.</p>`
           });
         }
