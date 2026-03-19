@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware, authorizeRoles } = require('../middleware/auth');
 const PSPProfile = require('../models/PSPProfile');
-const OrderBook = require('../models/OrderBook');
 const FinancingRequest = require('../models/FinancingRequest');
 const FinancingDocument = require('../models/FinancingDocument');
 const User = require('../models/User');
@@ -192,25 +191,7 @@ router.post('/apply-limit', async (req, res) => {
   }
 });
 
-// @route   GET /api/psp/order-book
-// @desc    Get PSP order book
-// @access  Private (PSP only)
-router.get('/order-book', async (req, res) => {
-  try {
-    const profile = await PSPProfile.findOne({ userId: req.user.userId });
 
-    if (!profile) {
-      return res.status(404).json({ message: 'Profile not found' });
-    }
-
-    const orders = await OrderBook.find({ pspId: profile._id }).sort({ createdAt: -1 });
-
-    res.json(orders);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
 // @route   POST /api/psp/request-financing
 // @desc    Request financing (drawdown) - ASYNC WORKFLOW

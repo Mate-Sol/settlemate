@@ -8,6 +8,7 @@ const PSPProfile = require('../models/PSPProfile');
 const mongoose = require('mongoose'); // Ensure mongoose is imported
 const { createNotification } = require('../services/notificationService');
 const { sendEmail } = require('../services/emailService');
+const ExternalPSPUser = require('../models/ExternalPSPUser'); // Third-party partner model
 
 
 // @route   POST /api/auth/register
@@ -267,5 +268,72 @@ router.get('/me', require('../middleware/auth').authMiddleware, async (req, res)
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+
+// =============================================================================
+// THIRD-PARTY / PARTNER AUTHENTICATION
+// =============================================================================
+
+// @route   POST /api/auth/third-party/login
+// @desc    Login for third-party partners (External PSPs)
+// @access  Public
+// @returns { token, apiKey, companyName }
+router.post('/third-party/login',
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('password').notEmpty()
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { email, password } = req.body;
+
+      // Find partner in ExternalPSPUser collection
+      const partner = await ExternalPSPUser.findOne({ email });
+      if (!partner) {
+        return res.status(401).json({ message: 'Invalid partner credentials' });
+      }
+
+      // Check if partner account is active
+      if (partner.isActive === false) {
+        return res.status(403).json({ message: 'Partner account is deactivated' });
+      }
+
+      // Validate password using the model method
+      const isMatch = await partner.comparePassword(password);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid partner credentials' });
+      }
+
+      // Generate JWT for the partner
+      // We include partner ID and a specific role to distinguish from internal users
+      const token = jwt.sign(
+        { 
+          partnerId: partner._id, 
+          role: 'EXTERNAL_PSP_PARTNER',
+          company: partner.companyName 
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '30d' } // Partners usually get longer-lived sessions or manage their own keys
+      );
+
+      res.json({
+        success: true,
+        message: 'Partner authenticated successfully',
+        token,           // The JWT access token
+        apiKey: partner.apiKey, // The API key they can use for subsequent webhook/API calls
+        companyName: partner.companyName
+      });
+
+    } catch (error) {
+      console.error('[Auth] Third-party login error:', error);
+      res.status(500).json({ message: 'Server error during partner authentication' });
+    }
+  }
+);
 
 module.exports = router;
