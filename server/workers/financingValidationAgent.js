@@ -28,7 +28,11 @@ async function notifyRejection(request, reason) {
         to: psp.userId.email,
         subject: 'Financing Request Rejected',
         title: 'Financing Request Rejected',
-        body: `<p>Your financing request for order <strong>${request.orderReference}</strong> has been rejected.</p><p><strong>Reason:</strong> ${reason}</p>`
+        body: `<p>Your financing request for order <strong>${request.orderReference}</strong> has been rejected.</p>
+               <div style="background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.05);">
+                 <p style="margin: 0 0 5px 0; font-weight: bold; color: #ffffff;">Reason:</p>
+                     <p style="margin: 0; color: #ebdffc;">${reason}</p>
+               </div>`
       });
     }
   } catch (err) {

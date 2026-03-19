@@ -16,6 +16,7 @@ const { initializeScheduledJobs } = require('./config/scheduler');
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/public', express.static('public'));
 
 // Routes
 app.use('/auth', require('./routes/auth'));
@@ -25,6 +26,7 @@ app.use('/cro', require('./routes/cro'));
 app.use('/cfo', require('./routes/cfo'));
 app.use('/external-psp', require('./routes/externalPsp'));
 app.use('/webhook', require('./routes/webhook'));
+app.use('/test', require('./routes/test'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

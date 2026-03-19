@@ -8,34 +8,108 @@ if (process.env.SENDGRID_API_KEY) {
 }
 
 /**
- * Standard Email Layout Wrapper
+ * Standard Email Layout Wrapper (DeFa Purple Premium theme)
  */
 const getEmailLayout = ({ title, body, actionLink, actionText }) => {
-  return `
-    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff;">
-      <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #3498db;">
-        <h1 style="color: #2c3e50; margin: 0; font-size: 24px;">PayMate</h1>
-      </div>
-      
-      <div style="padding: 25px 15px; color: #34495e; line-height: 1.6;">
-        <h2 style="color: #2c3e50; margin-top: 0;">${title}</h2>
-        <div style="font-size: 16px;">${body}</div>
-        
-        ${actionLink ? `
-          <div style="text-align: center; margin-top: 35px;">
-            <a href="${actionLink}" style="background-color: #3498db; color: white; text-decoration: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; display: inline-block;">
-              ${actionText || 'Click Here'}
-            </a>
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      background-color: #1D0B13; /* Very dark black-purple */
+      font-family: Arial, Helvetica, sans-serif;
+      color: #e2d5f8;
+    }
+    a {
+      color: #ff6bcc;
+      text-decoration: none;
+    }
+    .container {
+      width: 95%;
+      max-width: 600px;
+      margin: 20px auto;
+      background-color: #40192A; /* Deep premium wine-purple */
+      border-dash: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .header {
+      text-align: center;
+      padding: 30px;
+      background-color: #2b111c; /* Slightly darker frame header */
+      border-bottom: 4px solid #411A2B;
+    }
+    .header img {
+      display: block;
+      margin: auto;
+      width: 180px;
+    }
+    .content {
+      padding: 30px 25px;
+      line-height: 1.6em;
+      text-align: left;
+    }
+    .content h2 {
+      color: #ffffff;
+      font-size: 22px;
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+    .content p {
+      font-size: 16px;
+      color: #ebdffc;
+      margin: 10px 0;
+    }
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 11px;
+      color: #9b8ecf;
+    }
+  </style>
+</head>
+<body>
+  <table role="presentation" style="width: 100%; padding: 0; border-spacing: 0;">
+    <tr>
+      <td align="center" style="padding: 20px 0;">
+        <div class="container">
+          <div class="header">
+            <img src="http://localhost:5000/public/logo.png" style="width: 140px;" alt="PayMate Logo">
           </div>
-        ` : ''}
-      </div>
-      
-      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #7f8c8d; margin-top: 30px;">
-        <p style="margin: 5px 0;">This is an automated message from PayMate.</p>
-        <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} InvoiceMate. All rights reserved.</p>
-      </div>
-    </div>
-  `;
+
+          <div class="content">
+            <h2>${title}</h2>
+            <div style="font-size: 16px;">${body}</div>
+
+            ${actionLink ? `
+              <div style="text-align: center; margin-top: 35px;">
+                <a href="${actionLink}" style="background: linear-gradient(135deg, #c84f83 0%, #411A2B 100%); color: #ffffff; text-decoration: none; padding: 13px 40px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 4px 15px rgba(200, 79, 131, 0.25);">
+                  ${actionText || 'Proceed'}
+                </a>
+              </div>
+            ` : ''}
+
+            <p style="margin-top: 35px; font-size: 15px; color: #ebdffc; line-height: 1.5;">Regards,<br><strong>PayMate Team</strong></p>
+          </div>
+        </div>
+
+        <div class="footer">
+          &copy; ${new Date().getFullYear()} DeFa. All rights reserved.
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 };
 
 /**

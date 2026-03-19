@@ -150,7 +150,7 @@ router.post('/applications/:id/approve', async (req, res) => {
           subject: 'Credit Line Application Approved',
           title: 'Congratulations!',
           body: `<p>Your financing limit application for <strong>${profile.companyName}</strong> has been approved.</p>
-                 <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                 <div style="background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.05);">
                    <p style="margin: 5px 0;"><strong>Approved Amount:</strong> $${approvedAmount.toLocaleString()}</p>
                    <p style="margin: 5px 0;"><strong>Duration:</strong> ${approvedDuration} days</p>
                  </div>
@@ -216,7 +216,10 @@ router.post('/applications/:id/reject', async (req, res) => {
           subject: 'Application Status Update',
           title: 'Application Update',
           body: `<p>Your credit line application for <strong>${profile.companyName}</strong> has been reviewed and rejected.</p>
-                 <p><strong>Reason/Notes:</strong> ${notes || 'Please contact support for more details.'}</p>`
+                 <div style="background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.05);">
+                   <p style="margin: 0 0 5px 0; font-weight: bold; color: #ffffff;">Reason/Notes:</p>
+                     <p style="margin: 0; color: #ebdffc;">${notes || 'Please contact support for more details.'}</p>
+                 </div>`
         });
       }
     } catch (notifyError) {
@@ -262,7 +265,10 @@ router.post('/applications/:id/request-info', async (req, res) => {
           subject: 'Action Required: Application Information Needed',
           title: 'Information Required',
           body: `<p>We need additional information to process your application for <strong>${profile.companyName}</strong>.</p>
-                 <p><strong>Message from Reviewer:</strong> ${notes || 'Please check your dashboard.'}</p>
+                 <div style="background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid rgba(255, 255, 255, 0.05);">
+                   <p style="margin: 0 0 5px 0; font-weight: bold; color: #ffffff;">Message from Reviewer:</p>
+                     <p style="margin: 0; color: #ebdffc;">${notes || 'Please check your dashboard.'}</p>
+                 </div>
                  <p>Please log in and update your profile or upload the requested documents.</p>`,
           actionLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
           actionText: 'Go to Dashboard'
